@@ -110,10 +110,15 @@ State of the art, measured against the fastest maintained alternatives
 reproduce with `npm run bench`. Conversions are verified equivalent across
 libraries in `test/differential.test.js` before being compared for speed.
 whitepoint numbers use the space-object API (texel is object-only); string
-ids cost ~20 ns/op extra. Cusp mapping is statistical parity: texel uses
-fitted polynomial approximations of the gamut cusp, whitepoint solves the
-boundary cubics exactly (bracketed Newton, ~1e-11) with hue preserved
-exactly — same speed, strictly tighter answer.*
+ids cost ~20 ns/op extra. Cusp mapping is statistical parity in speed but
+not in accuracy: texel approximates the gamut cusp with fitted polynomials
+plus one Halley step, whitepoint solves the boundary cubics exactly.
+Measured across 3600 hues with each library's own conversions
+(`node tools/cusp-accuracy.js`): whitepoint's cusp sits on the boundary to
+≤ 3.3e-15 at every hue in every gamut; texel's fit is excellent typically
+(median 1.5e-9) but reaches 3.4e-2 near the blue corner (hue ≈ 264°) —
+larger than the 0.02 JND, in exactly the region where gamut mapping is
+exercised hardest. Same speed, no asterisk.*
 
 Every hot path is allocation-free with a caller-provided `out` array —
 verified by `node --expose-gc tools/alloc-audit.js` (< 0.01 B/op on
