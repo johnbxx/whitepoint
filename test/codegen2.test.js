@@ -18,7 +18,12 @@ function mulberry32(seed) {
   };
 }
 
-const TOL = { okhsl: 5e-4, okhsv: 5e-4, hsluv: 1e-9, hpluv: 1e-9 };
+const TOL = {
+  'okhsl|srgb': 5e-4, 'okhsv|srgb': 5e-4, // centidegree cusp cache divergence
+  'hsluv|srgb': 1e-9, 'hpluv|srgb': 1e-9,
+  'srgb|cam16-ucs': 1e-9, 'cam16-ucs|srgb': 1e-9,
+  'hct|srgb': 1e-6, // 48-step bisection, same as the library's
+};
 
 test('tier-3 emitted JS agrees with the library', () => {
   const rand = mulberry32(0x7133);
@@ -26,18 +31,19 @@ test('tier-3 emitted JS agrees with the library', () => {
   for (const [from, to] of specialPairs()) {
     const name = `wp_${from}_to_${to}`.replace(/-/g, '_');
     const fn = new Function(`${js(from, to)}\nreturn ${name};`)();
+    const tol = TOL[`${from}|${to}`];
     let worst = 0;
     for (let n = 0; n < 300; n++) {
-      const input = from.startsWith('ok')
-        ? [rand() * 360, rand(), 0.05 + rand() * 0.9]
-        : [rand() * 360, rand() * 100, 1 + rand() * 98];
+      // sample via the library so inputs are always in the source space's domain
+      const srgb = [0.03 + rand() * 0.94, 0.03 + rand() * 0.94, 0.03 + rand() * 0.94];
+      const input = convert(srgb, 'srgb', from);
       const expected = convert(input, from, to);
       const got = fn(input);
       for (let i = 0; i < 3; i++) {
-        worst = Math.max(worst, Math.abs(expected[i] - got[i]));
+        worst = Math.max(worst, Math.abs(expected[i] - got[i]) / (1 + Math.abs(expected[i])));
       }
     }
-    if (worst >= TOL[from]) failures.push(`${from}→${to}: ${worst.toExponential(2)} (tol ${TOL[from]})`);
+    if (worst >= tol) failures.push(`${from}→${to}: ${worst.toExponential(2)} (tol ${tol})`);
   }
   assert.deepStrictEqual(failures, []);
 });

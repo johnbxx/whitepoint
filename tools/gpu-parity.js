@@ -32,7 +32,7 @@ const srgbSamples = Array.from({ length: N }, () => [0.02 + rand() * 0.96, 0.02 
 // float32 tolerance by destination family: pow-chains and iterative solvers
 // lose more mantissa than matrix work.
 const FAMILY_TOL = (id) => {
-  if (['okhsl', 'okhsv', 'hsluv', 'hpluv'].includes(id)) return 4e-3; // in-shader solvers
+  if (['okhsl', 'okhsv', 'hsluv', 'hpluv', 'hct', 'cam16-ucs'].includes(id)) return 4e-3; // in-shader solvers / pow chains
   if (/^(rec2100|ictcp|jzazbz|jzczhz|acescc|acescct)/.test(id)) return 2e-3; // PQ/log chains
   if (/^(lab|lch|luv|lchuv|din99o|hunter)/.test(id)) return 2e-2; // L spans 0–100 (abs tol on big units)
   return 5e-4;

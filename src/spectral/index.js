@@ -15,6 +15,7 @@ import { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S } from './data.js';
 import { daylightXy } from '../lab/cct.js';
 
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
+export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 

@@ -40,6 +40,9 @@ const DIALECT = {
     sqrt: (x) => `Math.sqrt(${x})`,
     cos: (x) => `Math.cos(${x})`,
     sin: (x) => `Math.sin(${x})`,
+    atan2: (y, x) => `Math.atan2(${y}, ${x})`,
+    log: (x) => `Math.log(${x})`,
+    exp: (x) => `Math.exp(${x})`,
     min: (a, b) => `Math.min(${a}, ${b})`,
     max: (a, b) => `Math.max(${a}, ${b})`,
     mod360: (x) => `(((${x}) % 360) + 360) % 360`,
@@ -68,6 +71,9 @@ const wp_toe_inv = (x) => (x * x + ${consts.k1} * x) / (${consts.k3} * (x + ${co
     sqrt: (x) => `sqrt(${x})`,
     cos: (x) => `cos(${x})`,
     sin: (x) => `sin(${x})`,
+    atan2: (y, x) => `atan(${y}, ${x})`,
+    log: (x) => `log(${x})`,
+    exp: (x) => `exp(${x})`,
     min: (a, b) => `min(${a}, ${b})`,
     max: (a, b) => `max(${a}, ${b})`,
     mod360: (x) => `mod(mod(${x}, 360.0) + 360.0, 360.0)`,
@@ -96,6 +102,9 @@ float wp_toe_inv(float x) { return (x * x + ${consts.k1} * x) / (${consts.k3} * 
     sqrt: (x) => `sqrt(${x})`,
     cos: (x) => `cos(${x})`,
     sin: (x) => `sin(${x})`,
+    atan2: (y, x) => `atan2(${y}, ${x})`,
+    log: (x) => `log(${x})`,
+    exp: (x) => `exp(${x})`,
     min: (a, b) => `min(${a}, ${b})`,
     max: (a, b) => `max(${a}, ${b})`,
     mod360: (x) => `(((${x} % 360.0) + 360.0) % 360.0)`,
@@ -314,6 +323,162 @@ ${candidates}
   return d.wrap(name, helpers, body);
 }
 
+// ---- CAM16-UCS ↔ sRGB and HCT → sRGB ----
+//
+// All viewing-condition quantities (Material defaults) and matrices are
+// folded at emission time: the forward cone matrix is
+// diag(fl·rgbD)·M16·M(srgb→XYZ) and the inverse is its exact reverse, so
+// the shader sees two 3×3s, the adaptation curve, and the correlate
+// algebra. HCT's inverse carries the same 48-step J-bisection as the
+// library (pow-heavy: a picker/palette shader, not a per-pixel-per-frame
+// one — documented).
+
+import { cats } from '../constants/cats.js';
+import { invert as inv3, mulVec as mv3 } from '../core/mat3.js';
+import { CAM16_DEFAULT_VC } from '../spaces/cam16.js';
+
+function cam16Consts(d) {
+  const vc = CAM16_DEFAULT_VC;
+  const M16 = cats.cat16;
+  // forward: linear srgb → fl-scaled, discounted cone responses
+  const Mf = mul(M16, sRGB.m.toXyz).map((v, i) => v * vc.fl * vc.rgbD[Math.floor(i / 3)]);
+  // inverse: raw unadapted cones → linear srgb (1/fl, 1/rgbD, M16⁻¹, XYZ→srgb folded)
+  const Minv16 = inv3(M16);
+  const scaled = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) scaled[r * 3 + c] = Minv16[r * 3 + c] / (vc.rgbD[c] * vc.fl);
+  }
+  const Mb = mul(sRGB.m.fromXyz, scaled);
+  const Kn = Math.pow(1.64 - Math.pow(0.29, vc.n), 0.73);
+  const P1 = (50000 / 13) * vc.nc * vc.ncb;
+  return {
+    Mf: Mf.map(d.f), Mb: Mb.map(d.f),
+    aw: d.f(vc.aw), nbb: d.f(vc.nbb), cz: d.f(vc.cz), icz: d.f(1 / vc.cz),
+    fl25: d.f(vc.fl25), Kn: d.f(Kn), P1: d.f(P1),
+  };
+}
+
+function mat3Lines(d, M, inVar, outNames) {
+  return outNames.map((o, r) =>
+    d.decl(o, `${M[r * 3]} * ${d.gx(inVar, 0)} + ${M[r * 3 + 1]} * ${d.gx(inVar, 1)} + ${M[r * 3 + 2]} * ${d.gx(inVar, 2)}`)).join('\n  ');
+}
+
+// adaptation helpers per language
+const CAM_HELPERS = {
+  js: `const wp_cam_adapt = (y) => { const a = Math.abs(y); const f = Math.pow(a, 0.42); return Math.sign(y) * 400 * f / (f + 27.13); };
+const wp_cam_unadapt = (v) => { const a = Math.abs(v); const base = Math.max(0, 27.13 * a / (400 - a)); return Math.sign(v) * Math.pow(base, ${1 / 0.42}); };`,
+  glsl: `float wp_cam_adapt(float y) { float a = abs(y); float f = pow(a, 0.42); return sign(y) * 400.0 * f / (f + 27.13); }
+float wp_cam_unadapt(float v) { float a = abs(v); float base = max(0.0, 27.13 * a / (400.0 - a)); return sign(v) * pow(base, ${(1 / 0.42).toPrecision(17)}); }`,
+  wgsl: `fn wp_cam_adapt(y: f32) -> f32 { let a = abs(y); let f = pow(a, 0.42); return sign(y) * 400.0 * f / (f + 27.13); }
+fn wp_cam_unadapt(v: f32) -> f32 { let a = abs(v); let base = max(0.0, 27.13 * a / (400.0 - a)); return sign(v) * pow(base, ${(1 / 0.42).toPrecision(17)}); }`,
+};
+
+// shared inverse core: from (J, C, hr) in scope → linear srgb vec written to lr/lg/lb
+function camInverseCore(d, K) {
+  return `${d.decl('alpha', `C / ${d.sqrt('J / 100.0')}`)}
+  ${d.decl('tt', d.pow(`alpha / ${K.Kn}`, d.f(1 / 0.9)))}
+  ${d.decl('ac', `${K.aw} * ${d.pow('J / 100.0', K.icz)}`)}
+  ${d.decl('p2', `ac / ${K.nbb}`)}
+  ${d.decl('gam', `23.0 * (p2 + 0.305) * tt / (23.0 * ${K.P1} * eHue + 11.0 * tt * ${d.cos('hr')} + 108.0 * tt * ${d.sin('hr')})`)}
+  ${d.decl('ca', `gam * ${d.cos('hr')}`)}
+  ${d.decl('cb', `gam * ${d.sin('hr')}`)}
+  ${d.decl('rA', '(460.0 * p2 + 451.0 * ca + 288.0 * cb) / 1403.0')}
+  ${d.decl('gA', '(460.0 * p2 - 891.0 * ca - 261.0 * cb) / 1403.0')}
+  ${d.decl('bA', '(460.0 * p2 - 220.0 * ca - 6300.0 * cb) / 1403.0')}
+  ${d.decl('cr', 'wp_cam_unadapt(rA)')}
+  ${d.decl('cg', 'wp_cam_unadapt(gA)')}
+  ${d.decl('cbn', 'wp_cam_unadapt(bA)')}
+  ${d.decl('lr', `${K.Mb[0]} * cr + ${K.Mb[1]} * cg + ${K.Mb[2]} * cbn`)}
+  ${d.decl('lg', `${K.Mb[3]} * cr + ${K.Mb[4]} * cg + ${K.Mb[5]} * cbn`)}
+  ${d.decl('lb', `${K.Mb[6]} * cr + ${K.Mb[7]} * cg + ${K.Mb[8]} * cbn`)}`;
+}
+
+function srgbToCam16UcsSource(lang, name) {
+  const d = DIALECT[lang];
+  const K = cam16Consts(d);
+  const helpers = `${HELPERS[lang].srgb_decode}\n${CAM_HELPERS[lang]}`;
+  const body = `  ${d.decl('dr', `wp_srgb_decode(${d.in(0)})`)}
+  ${d.decl('dg', `wp_srgb_decode(${d.in(1)})`)}
+  ${d.decl('db', `wp_srgb_decode(${d.in(2)})`)}
+  ${d.decl('rA', `wp_cam_adapt(${K.Mf[0]} * dr + ${K.Mf[1]} * dg + ${K.Mf[2]} * db)`)}
+  ${d.decl('gA', `wp_cam_adapt(${K.Mf[3]} * dr + ${K.Mf[4]} * dg + ${K.Mf[5]} * db)`)}
+  ${d.decl('bA', `wp_cam_adapt(${K.Mf[6]} * dr + ${K.Mf[7]} * dg + ${K.Mf[8]} * db)`)}
+  ${d.decl('ca', '(11.0 * rA - 12.0 * gA + bA) / 11.0')}
+  ${d.decl('cb', '(rA + gA - 2.0 * bA) / 9.0')}
+  ${d.decl('u', '(20.0 * rA + 20.0 * gA + 21.0 * bA) / 20.0')}
+  ${d.decl('ac', `((40.0 * rA + 20.0 * gA + bA) / 20.0) * ${K.nbb}`)}
+  ${d.decl('J', `100.0 * ${d.pow(`ac / ${K.aw}`, K.cz)}`)}
+  ${d.decl('hr', `${d.atan2('cb', 'ca')}`)}
+  ${d.decl('eHue', `0.25 * (${d.cos('hr + 2.0')} + 3.8)`)}
+  ${d.decl('tt', `${K.P1} * eHue * ${d.sqrt('ca * ca + cb * cb')} / (u + 0.305)`)}
+  ${d.decl('alpha', `${d.pow('tt', '0.9')} * ${K.Kn}`)}
+  ${d.decl('C', `alpha * ${d.sqrt('J / 100.0')}`)}
+  ${d.decl('Mm', `C * ${K.fl25}`)}
+  ${d.decl('Mp', `${d.log('1.0 + 0.0228 * Mm')} / 0.0228`)}
+  ${d.ret3('1.7 * J / (1.0 + 0.007 * J)', `Mp * ${d.cos('hr')}`, `Mp * ${d.sin('hr')}`)}`;
+  return d.wrap(name, helpers, body);
+}
+
+function cam16UcsToSrgbSource(lang, name) {
+  const d = DIALECT[lang];
+  const K = cam16Consts(d);
+  const helpers = `${HELPERS[lang].srgb_encode}\n${CAM_HELPERS[lang]}`;
+  const body = `  ${d.decl('Jp', d.in(0))}
+  ${d.decl('Mp', d.sqrt(`${d.in(1)} * ${d.in(1)} + ${d.in(2)} * ${d.in(2)}`))}
+  ${d.decl('J', 'Jp / (1.7 - 0.007 * Jp)')}
+  if (J <= 0.0) { ${blackReturn(d)} }
+  ${d.decl('C', `(${d.exp('0.0228 * Mp')} - 1.0) / 0.0228 / ${K.fl25}`)}
+  ${d.decl('hr', `${d.atan2(d.in(2), d.in(1))}`)}
+  ${d.decl('eHue', `0.25 * (${d.cos('hr + 2.0')} + 3.8)`)}
+  ${camInverseCore(d, K)}
+  ${d.ret3('wp_srgb_encode(lr)', 'wp_srgb_encode(lg)', 'wp_srgb_encode(lb)')}`;
+  return d.wrap(name, helpers, body);
+}
+
+function hctToSrgbSource(lang, name) {
+  const d = DIALECT[lang];
+  const K = cam16Consts(d);
+  const helpers = `${HELPERS[lang].srgb_encode}\n${CAM_HELPERS[lang]}`;
+  // Y (relative, 0–1) of the inverse at a given J — only the Y row is needed
+  // inside the bisection; the full matrix runs once at the end.
+  const yRow = (() => {
+    const vc = CAM16_DEFAULT_VC;
+    const Minv16 = inv3(cats.cat16);
+    // Y (relative 0–1): the 100-scale cancels against the (100/fl) unadapt
+    // factor, leaving 1/fl — folding an extra /100 here was a 100× Y bug
+    // that sent the bisection to the rail (caught by emitted-JS parity).
+    return [0, 1, 2].map((c) => d.f(Minv16[3 + c] / (vc.rgbD[c] * vc.fl)));
+  })();
+  const body = `  ${d.decl('tone', d.in(2))}
+  if (tone <= 0.0) { ${blackReturn(d)} }
+  if (tone >= 100.0) { ${whiteReturn(d)} }
+  ${d.decl('fy', '(tone + 16.0) / 116.0')}
+  ${d.decl('targetY', 'fy * fy * fy')}
+  if (fy <= ${d.f(6 / 29)}) { targetY = (116.0 * fy - 16.0) / ${d.f(24389 / 27)}; }
+  ${d.decl('C', d.in(1))}
+  ${d.decl('hr', `${d.mod360(d.in(0))} * ${d.f(DEG2RAD)}`)}
+  ${d.decl('eHue', `0.25 * (${d.cos('hr + 2.0')} + 3.8)`)}
+  ${d.decl('jlo', '0.0')}
+  ${d.decl('jhi', '400.0')}
+  ${d.loop(48, `    ${d.decl('J', '0.5 * (jlo + jhi)')}
+    ${d.decl('alpha', `C / ${d.sqrt(d.max('J / 100.0', '1e-9'))}`)}
+    ${d.decl('tt', d.pow(`alpha / ${K.Kn}`, d.f(1 / 0.9)))}
+    ${d.decl('ac', `${K.aw} * ${d.pow('J / 100.0', K.icz)}`)}
+    ${d.decl('p2', `ac / ${K.nbb}`)}
+    ${d.decl('gam', `23.0 * (p2 + 0.305) * tt / (23.0 * ${K.P1} * eHue + 11.0 * tt * ${d.cos('hr')} + 108.0 * tt * ${d.sin('hr')})`)}
+    ${d.decl('ca', `gam * ${d.cos('hr')}`)}
+    ${d.decl('cb', `gam * ${d.sin('hr')}`)}
+    ${d.decl('cr', 'wp_cam_unadapt((460.0 * p2 + 451.0 * ca + 288.0 * cb) / 1403.0)')}
+    ${d.decl('cg', 'wp_cam_unadapt((460.0 * p2 - 891.0 * ca - 261.0 * cb) / 1403.0)')}
+    ${d.decl('cbn', 'wp_cam_unadapt((460.0 * p2 - 220.0 * ca - 6300.0 * cb) / 1403.0)')}
+    ${d.decl('Y', `${yRow[0]} * cr + ${yRow[1]} * cg + ${yRow[2]} * cbn`)}
+    if (Y < targetY) { jlo = J; } else { jhi = J; }`)}
+  ${d.decl('J', '0.5 * (jlo + jhi)')}
+  ${camInverseCore(d, K)}
+  ${d.ret3('wp_srgb_encode(lr)', 'wp_srgb_encode(lg)', 'wp_srgb_encode(lb)')}`;
+  return d.wrap(name, helpers, body);
+}
+
 // ---- public dispatch ----
 
 const SPECIAL = {
@@ -321,6 +486,9 @@ const SPECIAL = {
   'okhsl|srgb': okhslSource,
   'hsluv|srgb': (lang, name) => hsluvSource(lang, name, false),
   'hpluv|srgb': (lang, name) => hsluvSource(lang, name, true),
+  'srgb|cam16-ucs': srgbToCam16UcsSource,
+  'cam16-ucs|srgb': cam16UcsToSrgbSource,
+  'hct|srgb': hctToSrgbSource,
 };
 
 export function specialSource(lang, from, to, name) {

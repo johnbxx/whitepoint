@@ -1,6 +1,6 @@
 {
   "name": "whitepoint",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Research-grade color math: every CSS color space, arbitrary illuminants, CATs, and CCT — digit-identical in JS, GLSL, and WGSL.",
   "type": "module",
   "main": "./src/index.js",
@@ -18,6 +18,10 @@
     "./spectral": {
       "types": "./spectral.d.ts",
       "import": "./src/spectral/index.js"
+    },
+    "./spectral-1nm": {
+      "types": "./spectral-1nm.d.ts",
+      "import": "./src/spectral/data-1nm.js"
     }
   },
   "bin": {
@@ -30,6 +34,7 @@
     "types.d.ts",
     "codegen.d.ts",
     "spectral.d.ts",
+    "spectral-1nm.d.ts",
     "NORTHSTAR.md",
     "RECIPES.md"
   ],

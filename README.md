@@ -119,7 +119,11 @@ oldest loop: integrating Planck's law at 2856 K against the CMFs reproduces
 CIE illuminant A's tabulated chromaticity to 3e-4, and the D65 SPD integrates
 back to its own table entry. Metamerism, reflectance-under-any-light, and
 the unfitted Planckian locus — the workflows that previously required
-Python — run in the browser.
+Python — run in the browser. The F-series fluorescent SPDs ship too (their
+integration reproduces the F2/F7/F11 table chromaticities — another loop
+closed), and the CIE-normative **1 nm CMFs** are an opt-in import
+(`whitepoint/spectral-1nm`) for spiky line spectra, tightening the
+Planck→illuminant-A anchor to 1.5e-4.
 
 ## Codegen: the same math in your shader
 
@@ -139,8 +143,13 @@ for the solver-based spaces (okhsl, okhsv, hsluv, hpluv — exact cusp and
 boundary solvers in the shader) and per-pixel mixing, gamut mapping, and
 compositing.
 
+Appearance modeling runs in shaders too: `glsl('srgb', 'cam16-ucs')`,
+`glsl('cam16-ucs', 'srgb')`, and `glsl('hct', 'srgb')` (the HCT inverse
+carries its 48-step bisection — a palette/picker shader, not a per-frame
+one) with all viewing-condition constants folded at emission.
+
 And the claim is closed on real hardware: a CI job **compiles and executes
-all 541 emitted GLSL programs on an actual GPU** (headless Chromium;
+all 544 emitted GLSL programs on an actual GPU** (headless Chromium;
 SwiftShader on runners) and verifies the outputs against the float64 library
 within float32 arithmetic bounds, and compile-validates every WGSL emission
 against the WebGPU compiler where available (`node tools/gpu-parity.js`). GPU arithmetic is float32, so end-to-end
@@ -244,9 +253,12 @@ Across browser engines (`node tools/browser-bench.js`, object API):
 | srgb → oklch | 66 | 88 | 740 |
 | srgb → rec2020 | 60 | 80 | 584 |
 
-V8 and SpiderMonkey agree with the Node numbers; JavaScriptCore currently
-runs these numeric out-param patterns ~10× slower — measured and reported
-rather than hidden, and on the optimization watchlist.
+V8 and SpiderMonkey agree with the Node numbers. JavaScriptCore measures
+~10× slower — investigated: dispatch is exonerated (bypassing convert()
+saves <2%), and even hand-inlined raw arithmetic with no library code runs
+8× slower in Playwright's WebKit build, which appears not to reach JSC's
+top JIT tier. Real Safari likely performs substantially better; the library
+will not be contorted for a test-harness artifact.
 
 Every hot path is allocation-free with a caller-provided `out` array —
 verified by `node --expose-gc tools/alloc-audit.js` (< 0.01 B/op on
