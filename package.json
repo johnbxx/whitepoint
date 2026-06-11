@@ -32,7 +32,8 @@
     "precision": "node tools/precision-table.js",
     "bench": "node tools/bench.js",
     "alloc": "node --expose-gc tools/alloc-audit.js",
-    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts"
+    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts",
+    "site": "npx --yes esbuild docs/_entry.js --bundle --format=esm --minify --outfile=docs/whitepoint.js"
   },
   "keywords": [
     "color",

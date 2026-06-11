@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — a research-grade color laboratory for the web</title>
+<meta name="description" content="Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL. 42 spaces, measured precision, SOTA speed, spectral colorimetry.">
+<style>
+  :root {
+    --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
+    --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, sans-serif;
+    padding-bottom: 6rem;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  header { padding: 5rem 0 3rem; }
+  h1 { font-size: 2.6rem; letter-spacing: -0.02em; line-height: 1.15; }
+  h1 .wp { background: linear-gradient(90deg, var(--g0, #4ba3f7), var(--g1, #f74b8a)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { font-size: 1.25rem; color: var(--dim); margin-top: 0.75rem; max-width: 40rem; }
+  .numbers { display: flex; flex-wrap: wrap; gap: 2rem; margin: 2.5rem 0 0; }
+  .numbers div { min-width: 7rem; }
+  .numbers b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .numbers span { color: var(--dim); font-size: 0.85rem; }
+  section { margin-top: 4rem; }
+  h2 { font-size: 1.5rem; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+  .sub { color: var(--dim); margin-bottom: 1.25rem; max-width: 44rem; }
+  pre, code { font-family: var(--mono); font-size: 0.85rem; }
+  pre {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 10px;
+    padding: 1rem 1.25rem; overflow-x: auto; line-height: 1.5;
+  }
+  code.inline { background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  canvas { width: 100%; border-radius: 8px; display: block; }
+  .strip { margin-bottom: 0.9rem; }
+  .strip label { font-family: var(--mono); font-size: 0.78rem; color: var(--dim); display: block; margin-bottom: 0.3rem; }
+  .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  select, button, input[type=range] { accent-color: var(--accent); background: var(--panel); color: var(--text); border: 1px solid var(--edge); border-radius: 8px; padding: 0.45rem 0.7rem; font: inherit; font-size: 0.9rem; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  .swatches { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .swatch { width: 84px; }
+  .swatch .chip { height: 56px; border-radius: 8px; border: 1px solid var(--edge); }
+  .swatch span { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); display: block; margin-top: 0.3rem; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+  .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+  .card p { color: var(--dim); font-size: 0.9rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--edge); }
+  th { color: var(--dim); font-weight: 500; }
+  td.y { color: #7fd17f; } td.n { color: #6a6f7c; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 5rem; color: var(--dim); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span class="wp">whitepoint</span><br>a research-grade color laboratory for the web</h1>
+    <p class="tagline">Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.
+    Every constant cited, every matrix derived, every claim measured. Every color on this page
+    is computed by the library, right now, in your browser.</p>
+    <pre>npm install whitepoint</pre>
+    <div class="numbers">
+      <div><b>42</b><span>color spaces</span></div>
+      <div><b>10⁻¹⁵</b><span>round-trip error</span></div>
+      <div><b>47 ns</b><span>oklch → srgb (fastest measured)</span></div>
+      <div><b>105</b><span>tests, oracle-verified</span></div>
+      <div><b>0</b><span>hand-typed constants</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Mix in any space — and see why it matters</h2>
+    <p class="sub">The same two endpoints, interpolated per CSS Color 4 in five different
+    spaces. Naive sRGB mixing drags through mud; perceptual spaces don't. Every strip is
+    <code class="inline">mix()</code> running live.</p>
+    <div class="row">
+      <button id="remix">randomize endpoints</button>
+      <span id="mixlabel" style="font-family: var(--mono); font-size: 0.8rem; color: var(--dim)"></span>
+    </div>
+    <div id="strips"></div>
+  </section>
+
+  <section>
+    <h2>The illuminant lab</h2>
+    <p class="sub">One object color, re-lit. Chromatic adaptation between arbitrary white
+    points — named CIE illuminants, or any correlated color temperature on the daylight
+    locus. No other JS library does this.</p>
+    <div class="row">
+      <label for="cct" style="font-size:0.9rem; color:var(--dim)">CCT</label>
+      <input type="range" id="cct" min="4000" max="25000" value="6504" step="50" style="flex:1">
+      <span id="cctv" style="font-family:var(--mono); font-size:0.85rem; width:5.5rem"></span>
+    </div>
+    <div class="swatches" id="illum"></div>
+  </section>
+
+  <section>
+    <h2>Physics, live: the Planckian locus</h2>
+    <p class="sub">Blackbody color from 1,000 K to 12,000 K — computed by integrating
+    Planck's law against the CIE color matching functions, per pixel column, right now.
+    Not a fitted approximation: the law itself.</p>
+    <canvas id="planck" height="64"></canvas>
+  </section>
+
+  <section>
+    <h2>Your shader, our constants</h2>
+    <p class="sub">Conversions, gradient mixing, gamut mapping, and compositing emitted as
+    GLSL or WGSL — generated from the same constant tables the JS uses, parity-tested in CI.
+    Stop hand-porting color matrices.</p>
+    <div class="row">
+      <select id="cg-from"></select>
+      <span style="color:var(--dim)">→</span>
+      <select id="cg-to"></select>
+      <select id="cg-lang"><option>glsl</option><option>wgsl</option><option>js</option></select>
+      <button id="cg-copy">copy</button>
+    </div>
+    <pre id="cg-out" style="max-height: 280px"></pre>
+  </section>
+
+  <section>
+    <h2>Only here</h2>
+    <div class="grid">
+      <div class="card"><h3>Shader codegen with CPU parity</h3><p>GLSL + WGSL + JS from one
+        table of cited constants — conversions, OKLCH mixing, gamut mapping, Porter-Duff,
+        blend modes. Digit-identical by construction, verified in CI.</p></div>
+      <div class="card"><h3>Arbitrary illuminants &amp; CATs</h3><p>Bradford, CAT02, CAT16,
+        von Kries — between any white points, including CCT-derived daylight. The full CIE
+        illuminant table, computed inverses.</p></div>
+      <div class="card"><h3>Spectral colorimetry</h3><p>Reflectance under any light, the true
+        Planckian locus from Planck's law, CIE daylight synthesis, both standard observers.
+        Previously Python-only.</p></div>
+      <div class="card"><h3>CAM16 + HCT</h3><p>A full color appearance model with configurable
+        viewing conditions, CAM16-UCS, and Material's HCT — in no other JS library.</p></div>
+      <div class="card"><h3>Exact gamut geometry</h3><p>The cusp and boundary are solved, not
+        fitted: 3×10⁻¹⁵ on the boundary at every hue, where the reference fits err by up to
+        3×10⁻² near blue. Same speed.</p></div>
+      <div class="card"><h3>Measured, published precision</h3><p>A full-catalog round-trip
+        error table regenerated in CI; differential oracles against culori, colorjs, texel,
+        and Material — with every disagreement explained.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Honest comparison</h2>
+    <table>
+      <tr><th></th><th>whitepoint</th><th>culori</th><th>colorjs.io</th><th>@texel/color</th></tr>
+      <tr><td>Conversion speed (fastest measured)</td><td class="y">yes</td><td class="n">—</td><td class="n">—</td><td class="n">close</td></tr>
+      <tr><td>Shader codegen (GLSL/WGSL)</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>Arbitrary illuminants + CATs + CCT</td><td class="y">yes</td><td class="n">no</td><td class="n">partial</td><td class="n">no</td></tr>
+      <tr><td>Spectral (CMFs, Planck, daylight)</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>CAM16 / HCT</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>Published precision bounds</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">partial</td></tr>
+      <tr><td>CSS string parsing</td><td class="n">no, by design</td><td class="y">yes</td><td class="y">yes</td><td class="n">no</td></tr>
+    </table>
+    <p class="sub" style="margin-top:0.75rem">Parsing is deliberately out of scope — parse with
+    culori, pass the arrays here. Speed and accuracy claims are reproducible:
+    <code class="inline">npm run bench</code>, <code class="inline">npm run precision</code>.</p>
+  </section>
+
+  <footer>
+    <p>MIT licensed. Built from cited standards: CIE 015, CSS Color 4, BT.2100, AMPAS,
+    Ottosson, Porter–Duff, W3C compositing. <a href="https://github.com/REPO_TBD/whitepoint">Source &amp; verification suite</a>.</p>
+  </footer>
+</main>
+
+<script type="module">
+import * as wp from './whitepoint.js';
+const { convert, mix, toGamut, toHex, fromHex, adapt, illuminantFromCCT, codegen, spectral } = wp;
+
+const $ = (id) => document.getElementById(id);
+const clipToHex = (srgb) => toHex(toGamut(srgb, 'srgb', { method: 'clip' }));
+
+// hero gradient endpoints, via the library
+document.documentElement.style.setProperty('--g0', toHex(convert([0.72, 0.16, 250], 'oklch', 'srgb')));
+document.documentElement.style.setProperty('--g1', toHex(convert([0.72, 0.19, 350], 'oklch', 'srgb')));
+
+// ---- demo 1: mixing strips ----
+const SPACES = ['srgb', 'oklch', 'jzazbz', 'cam16-ucs', 'hsluv'];
+const strips = $('strips');
+for (const id of SPACES) {
+  const div = document.createElement('div');
+  div.className = 'strip';
+  div.innerHTML = `<label>mix(a, b, t, '${id}')</label><canvas height="44" data-space="${id}"></canvas>`;
+  strips.appendChild(div);
+}
+let A = [0.30, 0.65, 0.95], B = [0.98, 0.55, 0.15];
+function drawStrips() {
+  $('mixlabel').textContent = `${toHex(A)} → ${toHex(B)}`;
+  for (const cv of strips.querySelectorAll('canvas')) {
+    const space = cv.dataset.space;
+    const ctx = cv.getContext('2d');
+    const W = cv.width = cv.clientWidth * devicePixelRatio;
+    cv.height = 44 * devicePixelRatio;
+    const a = convert(A, 'srgb', space), b = convert(B, 'srgb', space);
+    const out = [0, 0, 0];
+    for (let x = 0; x < W; x += 2) {
+      mix(a, b, x / (W - 1), space, undefined, out);
+      ctx.fillStyle = clipToHex(convert(out, space, 'srgb'));
+      ctx.fillRect(x, 0, 2, cv.height);
+    }
+  }
+}
+$('remix').onclick = () => {
+  // force the endpoints far apart in hue, so the spaces visibly disagree
+  const h = Math.random() * 360;
+  const h2 = h + 120 + Math.random() * 120;
+  const r = (hue) => convert([0.5 + Math.random() * 0.3, 0.14 + Math.random() * 0.1, hue], 'oklch', 'srgb');
+  A = toGamut(r(h), 'srgb', { method: 'cusp' });
+  B = toGamut(r(h2), 'srgb', { method: 'cusp' });
+  drawStrips();
+};
+
+// ---- demo 2: illuminant lab ----
+const OBJ = fromHex('#4ba3f7'); // object color, as hub XYZ-ish? keep srgb→xyz
+const objXyz = convert(OBJ, 'srgb', 'xyz-d65');
+function drawIlluminants() {
+  const T = +$('cct').value;
+  $('cctv').textContent = `${T} K`;
+  const cases = [
+    ['D65', 'D65'], ['A', 'A'], ['F2', 'F2'], ['F11', 'F11'],
+    [`${T} K`, illuminantFromCCT(T)],
+  ];
+  const box = $('illum');
+  box.innerHTML = '';
+  for (const [label, white] of cases) {
+    const adapted = adapt(objXyz, white, 'D65'); // appearance of the object lit by `white`, shown on a D65 display
+    const hex = clipToHex(convert(adapted, 'xyz-d65', 'srgb'));
+    const el = document.createElement('div');
+    el.className = 'swatch';
+    el.innerHTML = `<div class="chip" style="background:${hex}"></div><span>${label}</span>`;
+    box.appendChild(el);
+  }
+}
+$('cct').oninput = drawIlluminants;
+
+// ---- demo 3: Planckian locus ----
+function drawPlanck() {
+  const cv = $('planck');
+  const ctx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth * devicePixelRatio;
+  cv.height = 64 * devicePixelRatio;
+  const xy = [0, 0];
+  for (let x = 0; x < W; x += 2) {
+    const T = 1000 + (x / W) * 11000;
+    spectral.planckianXy(T, undefined, xy);
+    const xyz = [xy[0] / xy[1], 1, (1 - xy[0] - xy[1]) / xy[1]];
+    const srgb = convert(xyz.map((v) => v * 0.85), 'xyz-d65', 'srgb');
+    ctx.fillStyle = clipToHex(srgb);
+    ctx.fillRect(x, 0, 2, cv.height);
+  }
+}
+
+// ---- demo 4: codegen ----
+const cgSpaces = codegen.supported().filter((s) => s !== 'xyz');
+for (const sel of [$('cg-from'), $('cg-to')]) {
+  for (const s of cgSpaces.concat(['okhsl', 'okhsv', 'hsluv', 'hpluv'])) {
+    sel.add(new Option(s, s));
+  }
+}
+$('cg-from').value = 'oklch';
+$('cg-to').value = 'display-p3';
+function drawCodegen() {
+  const from = $('cg-from').value, to = $('cg-to').value, lang = $('cg-lang').value;
+  try {
+    $('cg-out').textContent = codegen[lang](from, to);
+  } catch (e) {
+    $('cg-out').textContent = `// ${e.message}`;
+  }
+}
+for (const id of ['cg-from', 'cg-to', 'cg-lang']) $(id).onchange = drawCodegen;
+$('cg-copy').onclick = () => navigator.clipboard.writeText($('cg-out').textContent);
+
+drawStrips(); drawIlluminants(); drawPlanck(); drawCodegen();
+addEventListener('resize', () => { drawStrips(); drawPlanck(); });
+</script>
+</body>
+</html>

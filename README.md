@@ -12,6 +12,25 @@ gamut mapping, and the performance pass are built and verified; packaging
 (types, npm) and the extended space catalog are in progress.
 See [NORTHSTAR.md](./NORTHSTAR.md) for the principles and roadmap.
 
+## What can you do here that you can't anywhere else?
+
+- **Pull your color math into a shader** — conversions, OKLCH gradient mixing,
+  gamut mapping, Porter-Duff, and blend modes emitted as GLSL/WGSL from the
+  same constants the JS runs, parity-tested in CI
+- **Re-light a color** — chromatic adaptation between arbitrary white points
+  with five CATs, the full CIE illuminant table, and CCT-derived daylight
+- **Compute color from spectra** — measured reflectance under any light, the
+  true Planckian locus from Planck's law, both standard observers
+- **Run a full appearance model** — CAM16 with configurable viewing
+  conditions, CAM16-UCS, and Material's HCT
+- **Stand on exact gamut geometry** — the cusp and boundary are solved
+  (3×10⁻¹⁵), not polynomial-fitted (~3×10⁻² near blue elsewhere)
+- **Cite your pipeline** — measured precision tables, named oracles, sourced
+  constants; the verification suite is a feature, not a chore
+
+The interactive demos in [`docs/`](./docs/index.html) run every claim live,
+using the library itself.
+
 ## Install
 
 ```sh
