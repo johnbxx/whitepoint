@@ -33,12 +33,19 @@ function audit(label, fn) {
   console.log(`${ok ? '✔' : '✖'} ${label.padEnd(42)} ${perOp.toFixed(3)} B/op`);
 }
 
+// Options objects are hoisted so the audit measures the LIBRARY, not the
+// harness: older V8s (Node 22) don't escape-analyze per-call literals away,
+// which showed up as phantom 0.5–0.8 B/op on CI runners.
+const CUSP_OPTS = { gamut: 'srgb', method: 'cusp' };
+const CSS_OPTS = { gamut: 'srgb', method: 'css' };
+const CLIP_OPTS = { gamut: 'srgb', method: 'clip' };
+
 audit('convert oklch→srgb (objects)', () => convert(oklch, OKLCH, sRGB, out));
 audit('convert oklch→srgb (strings)', () => convert(oklch, 'oklch', 'srgb', out));
 audit('convert srgb→oklch (objects)', () => convert(srgb, sRGB, OKLCH, out));
-audit('toGamut cusp', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'cusp' }, out));
-audit('toGamut css', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'css' }, out));
-audit('toGamut clip', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'clip' }, out));
+audit('toGamut cusp', () => toGamut(oklch, 'oklch', CUSP_OPTS, out));
+audit('toGamut css', () => toGamut(oklch, 'oklch', CSS_OPTS, out));
+audit('toGamut clip', () => toGamut(oklch, 'oklch', CLIP_OPTS, out));
 audit('adapt D65→A (named, bradford)', () => adapt(xyz, 'D65', 'A', out));
 
 process.exit(failed ? 1 : 0);
