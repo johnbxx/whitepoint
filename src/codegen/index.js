@@ -312,3 +312,223 @@ export function wgslComposite(op = 'source-over', { name = compositeName(op) } =
 export function jsComposite(op = 'source-over', { name = compositeName(op) } = {}) {
   return compositeSource('js', op, name);
 }
+
+// ---- Shader-side blend modes (W3C Compositing & Blending L1) ----
+//
+// Componentwise modes emit as vec3 expressions; branching modes as scalar
+// helpers; the non-separable four use the spec's Lum/Sat machinery — where
+// SetSat reduces to the branchless vector form (c − min)·s/(max − min).
+
+const BLEND_VEC3 = {
+  'normal': (b, s) => s,
+  'multiply': (b, s) => `${b} * ${s}`,
+  'screen': (b, s) => `${b} + ${s} - ${b} * ${s}`,
+  'darken': (b, s) => `min(${b}, ${s})`,
+  'lighten': (b, s) => `max(${b}, ${s})`,
+  'difference': (b, s) => `abs(${b} - ${s})`,
+  'exclusion': (b, s) => `${b} + ${s} - 2.0 * ${b} * ${s}`,
+};
+
+const SCALAR_HELPERS = {
+  glsl: {
+    'hard-light': `float wp_hard_light_c(float b, float s) { return s <= 0.5 ? b * 2.0 * s : b + (2.0 * s - 1.0) - b * (2.0 * s - 1.0); }`,
+    'overlay': `float wp_overlay_c(float b, float s) { return wp_hard_light_c(s, b); }`,
+    'color-dodge': `float wp_color_dodge_c(float b, float s) { if (b == 0.0) { return 0.0; } if (s == 1.0) { return 1.0; } return min(1.0, b / (1.0 - s)); }`,
+    'color-burn': `float wp_color_burn_c(float b, float s) { if (b == 1.0) { return 1.0; } if (s == 0.0) { return 0.0; } return 1.0 - min(1.0, (1.0 - b) / s); }`,
+    'soft-light': `float wp_softlight_d(float x) { return x <= 0.25 ? ((16.0 * x - 12.0) * x + 4.0) * x : sqrt(x); }
+float wp_soft_light_c(float b, float s) { return s <= 0.5 ? b - (1.0 - 2.0 * s) * b * (1.0 - b) : b + (2.0 * s - 1.0) * (wp_softlight_d(b) - b); }`,
+  },
+  wgsl: {
+    'hard-light': `fn wp_hard_light_c(b: f32, s: f32) -> f32 { if (s <= 0.5) { return b * 2.0 * s; } return b + (2.0 * s - 1.0) - b * (2.0 * s - 1.0); }`,
+    'overlay': `fn wp_overlay_c(b: f32, s: f32) -> f32 { return wp_hard_light_c(s, b); }`,
+    'color-dodge': `fn wp_color_dodge_c(b: f32, s: f32) -> f32 { if (b == 0.0) { return 0.0; } if (s == 1.0) { return 1.0; } return min(1.0, b / (1.0 - s)); }`,
+    'color-burn': `fn wp_color_burn_c(b: f32, s: f32) -> f32 { if (b == 1.0) { return 1.0; } if (s == 0.0) { return 0.0; } return 1.0 - min(1.0, (1.0 - b) / s); }`,
+    'soft-light': `fn wp_softlight_d(x: f32) -> f32 { if (x <= 0.25) { return ((16.0 * x - 12.0) * x + 4.0) * x; } return sqrt(x); }
+fn wp_soft_light_c(b: f32, s: f32) -> f32 { if (s <= 0.5) { return b - (1.0 - 2.0 * s) * b * (1.0 - b); } return b + (2.0 * s - 1.0) * (wp_softlight_d(b) - b); }`,
+  },
+  js: {
+    'hard-light': `const wp_hard_light_c = (b, s) => s <= 0.5 ? b * 2 * s : b + (2 * s - 1) - b * (2 * s - 1);`,
+    'overlay': `const wp_overlay_c = (b, s) => wp_hard_light_c(s, b);`,
+    'color-dodge': `const wp_color_dodge_c = (b, s) => b === 0 ? 0 : s === 1 ? 1 : Math.min(1, b / (1 - s));`,
+    'color-burn': `const wp_color_burn_c = (b, s) => b === 1 ? 1 : s === 0 ? 0 : 1 - Math.min(1, (1 - b) / s);`,
+    'soft-light': `const wp_softlight_d = (x) => x <= 0.25 ? ((16 * x - 12) * x + 4) * x : Math.sqrt(x);
+const wp_soft_light_c = (b, s) => s <= 0.5 ? b - (1 - 2 * s) * b * (1 - b) : b + (2 * s - 1) * (wp_softlight_d(b) - b);`,
+  },
+};
+
+const NONSEP_HELPERS = {
+  glsl: `float wp_lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)); }
+vec3 wp_clip_color(vec3 c) {
+  float l = wp_lum(c);
+  float n = min(c.r, min(c.g, c.b));
+  float x = max(c.r, max(c.g, c.b));
+  if (n < 0.0) { c = l + (c - l) * l / (l - n); }
+  if (x > 1.0) { c = l + (c - l) * (1.0 - l) / (x - l); }
+  return c;
+}
+vec3 wp_set_lum(vec3 c, float l) { return wp_clip_color(c + (l - wp_lum(c))); }
+float wp_sat(vec3 c) { return max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b)); }
+vec3 wp_set_sat(vec3 c, float s) {
+  float mn = min(c.r, min(c.g, c.b));
+  float mx = max(c.r, max(c.g, c.b));
+  return mx > mn ? (c - mn) * s / (mx - mn) : vec3(0.0);
+}`,
+  wgsl: `fn wp_lum(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.3, 0.59, 0.11)); }
+fn wp_clip_color(c_in: vec3<f32>) -> vec3<f32> {
+  var c = c_in;
+  let l = wp_lum(c);
+  let lv = vec3<f32>(l);
+  let n = min(c.x, min(c.y, c.z));
+  let x = max(c.x, max(c.y, c.z));
+  if (n < 0.0) { c = lv + (c - lv) * l / (l - n); }
+  if (x > 1.0) { c = lv + (c - lv) * (1.0 - l) / (x - l); }
+  return c;
+}
+fn wp_set_lum(c: vec3<f32>, l: f32) -> vec3<f32> { return wp_clip_color(c + vec3<f32>(l - wp_lum(c))); }
+fn wp_sat(c: vec3<f32>) -> f32 { return max(c.x, max(c.y, c.z)) - min(c.x, min(c.y, c.z)); }
+fn wp_set_sat(c: vec3<f32>, s: f32) -> vec3<f32> {
+  let mn = min(c.x, min(c.y, c.z));
+  let mx = max(c.x, max(c.y, c.z));
+  if (mx > mn) { return (c - vec3<f32>(mn)) * s / (mx - mn); }
+  return vec3<f32>(0.0);
+}`,
+  js: `const wp_lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+const wp_clip_color = (c) => {
+  const l = wp_lum(c);
+  const n = Math.min(c[0], c[1], c[2]);
+  const x = Math.max(c[0], c[1], c[2]);
+  if (n < 0) { for (let i = 0; i < 3; i++) c[i] = l + ((c[i] - l) * l) / (l - n); }
+  if (x > 1) { for (let i = 0; i < 3; i++) c[i] = l + ((c[i] - l) * (1 - l)) / (x - l); }
+  return c;
+};
+const wp_set_lum = (c, l) => { const d = l - wp_lum(c); c[0] += d; c[1] += d; c[2] += d; return wp_clip_color(c); };
+const wp_sat = (c) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
+const wp_set_sat = (c, s) => {
+  const mn = Math.min(c[0], c[1], c[2]);
+  const mx = Math.max(c[0], c[1], c[2]);
+  for (let i = 0; i < 3; i++) c[i] = mx > mn ? ((c[i] - mn) * s) / (mx - mn) : 0;
+  return c;
+};`,
+};
+
+const NONSEP_EXPR = {
+  'hue': (b, s) => `wp_set_lum(wp_set_sat(${s}, wp_sat(${b})), wp_lum(${b}))`,
+  'saturation': (b, s) => `wp_set_lum(wp_set_sat(${b}, wp_sat(${s})), wp_lum(${b}))`,
+  'color': (b, s) => `wp_set_lum(${s}, wp_lum(${b}))`,
+  'luminosity': (b, s) => `wp_set_lum(${b}, wp_lum(${s}))`,
+};
+
+function blendName(mode) {
+  return `wp_blend_${mode}`.replace(/-/g, '_');
+}
+
+function blendSource(lang, mode, name) {
+  let helpers = '';
+  let bExpr; // vec3-valued blend expression in terms of backdrop/source rgb
+
+  const vecB = lang === 'glsl' ? 'dst.rgb' : lang === 'wgsl' ? 'dst.rgb' : null;
+  const vecS = lang === 'glsl' ? 'src.rgb' : lang === 'wgsl' ? 'src.rgb' : null;
+
+  if (BLEND_VEC3[mode]) {
+    bExpr = (b, s) => BLEND_VEC3[mode](b, s);
+  } else if (SCALAR_HELPERS[lang][mode] !== undefined || ['overlay', 'hard-light', 'color-dodge', 'color-burn', 'soft-light'].includes(mode)) {
+    // overlay depends on hard-light's helper
+    helpers = mode === 'overlay'
+      ? `${SCALAR_HELPERS[lang]['hard-light']}\n${SCALAR_HELPERS[lang]['overlay']}`
+      : SCALAR_HELPERS[lang][mode];
+    const h = `wp_${mode.replace(/-/g, '_')}_c`;
+    bExpr = null;
+    if (lang === 'js') {
+      return `${helpers}
+function ${name}(src, dst, out = [0, 0, 0, 0]) {
+  const as = src[3], ab = dst[3];
+  const ao = as + ab * (1 - as);
+  for (let i = 0; i < 3; i++) {
+    const b = ${h}(dst[i], src[i]);
+    const csp = (1 - ab) * src[i] + ab * b;
+    const co = as * csp + ab * (1 - as) * dst[i];
+    out[i] = ao === 0 ? 0 : co / ao;
+  }
+  out[3] = ao;
+  return out;
+}`;
+    }
+    const vec = lang === 'glsl' ? 'vec3' : 'vec3<f32>';
+    const comp = lang === 'glsl' ? ['r', 'g', 'b'] : ['x', 'y', 'z'];
+    bExpr = () => `${vec}(${comp.map((c) => `${h}(dst.${lang === 'glsl' ? 'rgb' : 'rgb'}.${c} , src.rgb.${c})`).join(', ')})`;
+  } else if (NONSEP_EXPR[mode]) {
+    helpers = NONSEP_HELPERS[lang];
+    bExpr = NONSEP_EXPR[mode];
+  } else {
+    throw new Error(`codegen: unknown blend mode "${mode}"`);
+  }
+
+  if (lang === 'js') {
+    const expr = NONSEP_EXPR[mode]
+      ? NONSEP_EXPR[mode]('[dst[0], dst[1], dst[2]]', '[src[0], src[1], src[2]]')
+      : null;
+    if (expr) {
+      return `${helpers}
+function ${name}(src, dst, out = [0, 0, 0, 0]) {
+  const as = src[3], ab = dst[3];
+  const ao = as + ab * (1 - as);
+  const bl = ${expr};
+  for (let i = 0; i < 3; i++) {
+    const csp = (1 - ab) * src[i] + ab * bl[i];
+    const co = as * csp + ab * (1 - as) * dst[i];
+    out[i] = ao === 0 ? 0 : co / ao;
+  }
+  out[3] = ao;
+  return out;
+}`;
+    }
+    // componentwise vec mode
+    const cw = (i) => BLEND_VEC3[mode](`dst[${i}]`, `src[${i}]`)
+      .replace(/min\(/g, 'Math.min(').replace(/max\(/g, 'Math.max(').replace(/abs\(/g, 'Math.abs(').replace(/2\.0/g, '2');
+    return `function ${name}(src, dst, out = [0, 0, 0, 0]) {
+  const as = src[3], ab = dst[3];
+  const ao = as + ab * (1 - as);
+  for (let i = 0; i < 3; i++) {
+    const b = ${cw('i')};
+    const csp = (1 - ab) * src[i] + ab * b;
+    const co = as * csp + ab * (1 - as) * dst[i];
+    out[i] = ao === 0 ? 0 : co / ao;
+  }
+  out[3] = ao;
+  return out;
+}`;
+  }
+
+  const blendLine = `${bExpr(vecB, vecS)}`;
+  if (lang === 'glsl') {
+    return `${helpers}${helpers ? '\n' : ''}vec4 ${name}(vec4 src, vec4 dst) {
+  vec3 bl = ${blendLine};
+  vec3 csp = (1.0 - dst.a) * src.rgb + dst.a * bl;
+  float ao = src.a + dst.a * (1.0 - src.a);
+  vec3 co = src.a * csp + dst.a * (1.0 - src.a) * dst.rgb;
+  return ao == 0.0 ? vec4(0.0) : vec4(co / ao, ao);
+}`;
+  }
+  return `${helpers}${helpers ? '\n' : ''}fn ${name}(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+  let bl = ${blendLine.replace(/dst\.rgb/g, 'dst.rgb').replace(/src\.rgb/g, 'src.rgb')};
+  let csp = (1.0 - dst.w) * src.rgb + dst.w * bl;
+  let ao = src.w + dst.w * (1.0 - src.w);
+  let co = src.w * csp + dst.w * (1.0 - src.w) * dst.rgb;
+  return select(vec4<f32>(co / ao, ao), vec4<f32>(0.0), ao == 0.0);
+}`;
+}
+
+/** GLSL blend-then-composite (source-over) for a W3C blend mode, straight-alpha vec4. */
+export function glslBlend(mode = 'normal', { name = blendName(mode) } = {}) {
+  return blendSource('glsl', mode, name);
+}
+
+/** WGSL blend. */
+export function wgslBlend(mode = 'normal', { name = blendName(mode) } = {}) {
+  return blendSource('wgsl', mode, name);
+}
+
+/** Standalone JS blend (parity-tested against the library in CI). */
+export function jsBlend(mode = 'normal', { name = blendName(mode) } = {}) {
+  return blendSource('js', mode, name);
+}

@@ -8,7 +8,8 @@ import {
   premultiply, unpremultiply, composite, overStack, blend,
   porterDuffOperators,
 } from '../src/index.js';
-import { jsComposite, glslComposite, wgslComposite } from '../src/codegen/index.js';
+import { jsComposite, glslComposite, wgslComposite, jsBlend, glslBlend, wgslBlend } from '../src/codegen/index.js';
+import { blend as libBlend, blendModes } from '../src/index.js';
 
 function mulberry32(seed) {
   let t = seed >>> 0;
@@ -111,6 +112,28 @@ test('blend modes: spec anchors', () => {
   }
   // normal mode with opaque source is the source
   assert.deepStrictEqual(blend(opaque(0.1, 0.2, 0.3), c, 'normal').slice(0, 3), [0.1, 0.2, 0.3]);
+});
+
+test('emitted blends agree with the library for every mode', () => {
+  const rand = mulberry32(0xB1E2D);
+  for (const mode of blendModes) {
+    const name = `wp_blend_${mode}`.replace(/-/g, '_');
+    const fn = new Function(`${jsBlend(mode)}\nreturn ${name};`)();
+    for (let n = 0; n < 50; n++) {
+      const s = [rand(), rand(), rand(), rand()];
+      const d = [rand(), rand(), rand(), rand()];
+      const expected = libBlend(s, d, mode);
+      const got = fn(s, d);
+      for (let i = 0; i < 4; i++) {
+        assert.ok(Math.abs(expected[i] - got[i]) < 1e-14, `${mode}[${i}]: ${got[i]} vs ${expected[i]}`);
+      }
+    }
+    assert.ok(glslBlend(mode).includes(`vec4 ${name}(vec4 src, vec4 dst)`), `glsl ${mode}`);
+    assert.ok(wgslBlend(mode).includes(`fn ${name}(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32>`), `wgsl ${mode}`);
+    for (const bad of ['NaN', 'Infinity', 'undefined']) {
+      assert.ok(!glslBlend(mode).includes(bad) && !wgslBlend(mode).includes(bad), `${mode} contains ${bad}`);
+    }
+  }
 });
 
 test('emitted compositors agree with the library for every operator', () => {
