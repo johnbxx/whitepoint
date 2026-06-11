@@ -2,9 +2,29 @@
 // Dalal 2005, the canonical reference with its published test pairs).
 // Inputs are CIE Lab coordinates (L 0–100). Frozen spec, exact computation.
 
+import { convert } from '../core/convert.js';
+
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const POW25_7 = Math.pow(25, 7);
+
+const UA = [0, 0, 0];
+const UB = [0, 0, 0];
+
+/**
+ * CAM16-UCS color difference ΔE′ (Li et al. 2017): Euclidean distance in
+ * CAM16-UCS under the default viewing conditions.
+ *
+ * @param {number[]} a - coordinates in `space`
+ * @param {number[]} b - coordinates in `space`
+ * @param {object|string} [space] - the space a and b are expressed in
+ */
+export function deltaECAM16(a, b, space = 'srgb') {
+  convert(a, space, 'cam16-ucs', UA);
+  convert(b, space, 'cam16-ucs', UB);
+  const dJ = UA[0] - UB[0], da = UA[1] - UB[1], db = UA[2] - UB[2];
+  return Math.sqrt(dJ * dJ + da * da + db * db);
+}
 
 /**
  * @param {number[]} lab1 - CIE Lab

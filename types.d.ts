@@ -15,7 +15,8 @@ export type SpaceId =
   | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv'
   | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct'
   | 'rec2100-pq' | 'rec2100-hlg' | 'din99o' | 'din99o-lch'
-  | 'cam16' | 'cam16-ucs' | 'hct';
+  | 'cam16' | 'cam16-ucs' | 'hct'
+  | 'hsluv' | 'hpluv' | 'hunter-lab' | 'xyb';
 
 export interface ColorSpace {
   readonly id: string;
@@ -82,6 +83,20 @@ export const DIN99oLCH: ColorSpace;
 export const CAM16JCh: ColorSpace;
 export const CAM16UCS: ColorSpace;
 export const HCT: ColorSpace;
+export const HSLuv: ColorSpace;
+export const HPLuv: ColorSpace;
+export const HunterLab: ColorSpace;
+export const XYB: ColorSpace;
+
+/** CAM16-UCS color difference ΔE′ (Euclidean in cam16-ucs). */
+export function deltaECAM16(a: ArrayLike<number>, b: ArrayLike<number>, space?: SpaceLike): number;
+
+// Device-model boundary utilities (not registry spaces)
+export function cmykFromSrgb(rgb: ArrayLike<number>, out?: number[]): number[];
+export function srgbFromCmyk(cmyk: ArrayLike<number>, out?: Vec3): Vec3;
+export function srgbFromAnsi256(index: number, out?: Vec3): Vec3;
+export function ansi256FromSrgb(rgb: ArrayLike<number>): number;
+export function ansi16FromSrgb(rgb: ArrayLike<number>): number;
 
 export interface Cam16ViewingConditions {
   fl: number; fl25: number; n: number; z: number; c: number; nc: number;

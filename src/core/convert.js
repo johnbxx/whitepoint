@@ -16,6 +16,8 @@ import {
 } from '../spaces/rgb.js';
 import { DIN99o, DIN99oLCH } from '../spaces/din99o.js';
 import { CAM16JCh, CAM16UCS, HCT } from '../spaces/cam16.js';
+import { HSLuv, HPLuv } from '../spaces/hsluv.js';
+import { HunterLab, XYB } from '../spaces/misc.js';
 import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
@@ -66,6 +68,10 @@ export const spaces = {
   'cam16': CAM16JCh,
   'cam16-ucs': CAM16UCS,
   'hct': HCT,
+  'hsluv': HSLuv,
+  'hpluv': HPLuv,
+  'hunter-lab': HunterLab,
+  'xyb': XYB,
 };
 
 export function resolve(space) {

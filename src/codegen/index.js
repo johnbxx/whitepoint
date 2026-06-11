@@ -147,7 +147,7 @@ export function jsGamutMap(gamut, { name = gamutMapName(gamut) } = {}) {
 // core of gradient shaders. Coordinates must already be in `space`.
 
 const MIX_HUE_CHANNEL = {
-  hsl: 0, hwb: 0, hsv: 0, hsi: 0, okhsl: 0, okhsv: 0, hct: 0,
+  hsl: 0, hwb: 0, hsv: 0, hsi: 0, okhsl: 0, okhsv: 0, hct: 0, hsluv: 0, hpluv: 0,
   lch: 2, oklch: 2, lchuv: 2, jzczhz: 2, 'din99o-lch': 2, cam16: 2,
 };
 const HUE_METHODS = ['shorter', 'longer', 'increasing', 'decreasing'];

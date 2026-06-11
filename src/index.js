@@ -15,6 +15,8 @@ export {
   CAM16JCh, CAM16UCS, HCT,
   cam16ViewingConditions, xyzToCam16, cam16ToXyz, CAM16_DEFAULT_VC,
 } from './spaces/cam16.js';
+export { HSLuv, HPLuv } from './spaces/hsluv.js';
+export { HunterLab, XYB } from './spaces/misc.js';
 export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';
@@ -39,7 +41,8 @@ export { inGamut, toGamut, clip, deltaEOK, findCusp, findCuspNumerical } from '.
 export { mix, mixAlpha, hueDelta } from './ops/mix.js';
 export { serialize } from './ops/serialize.js';
 export { wcagLuminance, contrastWCAG2 } from './ops/contrast.js';
-export { deltaE2000 } from './ops/diff.js';
+export { deltaE2000, deltaECAM16 } from './ops/diff.js';
+export { cmykFromSrgb, srgbFromCmyk, srgbFromAnsi256, ansi256FromSrgb, ansi16FromSrgb } from './ops/device.js';
 export {
   premultiply, unpremultiply, composite, overStack, blend,
   porterDuffOperators, blendModes,
