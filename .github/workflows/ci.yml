@@ -26,3 +26,16 @@ jobs:
         run: npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts
       - name: Precision bounds table
         run: npm run precision >> "$GITHUB_STEP_SUMMARY"
+
+  gpu-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Execute every emitted shader on GPU (SwiftShader)
+        run: node tools/gpu-parity.js

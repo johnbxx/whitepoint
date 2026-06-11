@@ -33,6 +33,7 @@ const DIALECT = {
   js: {
     f: (n) => fmt(n, 'js'),
     decl: (n, e) => `let ${n} = ${e};`,
+    decl3: (n, e) => `let ${n} = ${e};`,
     loop: (n, body) => `for (let i = 0; i < ${n}; i++) {\n${body}\n}`,
     pow: (x, y) => `Math.pow(${x}, ${y})`,
     cbrt: (x) => `Math.cbrt(${x})`,
@@ -60,6 +61,7 @@ const wp_toe_inv = (x) => (x * x + ${consts.k1} * x) / (${consts.k3} * (x + ${co
   glsl: {
     f: (n) => fmt(n, 'glsl'),
     decl: (n, e) => `float ${n} = ${e};`,
+    decl3: (n, e) => `vec3 ${n} = ${e};`,
     loop: (n, body) => `for (int i = 0; i < ${n}; i++) {\n${body}\n}`,
     pow: (x, y) => `pow(${x}, ${y})`,
     cbrt: (x) => `pow(${x}, ${fmt(1 / 3, 'glsl')})`,
@@ -87,6 +89,7 @@ float wp_toe_inv(float x) { return (x * x + ${consts.k1} * x) / (${consts.k3} * 
   wgsl: {
     f: (n) => fmt(n, 'wgsl'),
     decl: (n, e) => `var ${n} = ${e};`,
+    decl3: (n, e) => `var ${n} = ${e};`,
     loop: (n, body) => `for (var i: i32 = 0; i < ${n}; i++) {\n${body}\n}`,
     pow: (x, y) => `pow(${x}, ${y})`,
     cbrt: (x) => `pow(${x}, ${fmt(1 / 3, 'wgsl')})`,
@@ -153,7 +156,7 @@ function cuspBlock(d) {
 // final: oklab(L, C·ca, C·cb) → linear sRGB → encode
 function okTail(d) {
   return [
-    d.decl('lin', 'wp_oklc_lin(L, C, kl, km, ks)'),
+    d.decl3('lin', 'wp_oklc_lin(L, C, kl, km, ks)'),
     d.ret3(
       `wp_srgb_encode(${d.gx('lin', 0)})`,
       `wp_srgb_encode(${d.gx('lin', 1)})`,
@@ -188,7 +191,7 @@ function okhsvSource(lang, name) {
   ${d.decl('Lnew', 'wp_toe_inv(L)')}
   if (L > 0.0) { C = C * Lnew / L; } else { C = 0.0; }
   L = Lnew;
-  ${d.decl('rs', 'wp_oklc_lin(Lvt, Cvt, kl, km, ks)')}
+  ${d.decl3('rs', 'wp_oklc_lin(Lvt, Cvt, kl, km, ks)')}
   ${d.decl('scale', d.cbrt(`1.0 / ${d.max(d.max(d.gx('rs', 0), d.gx('rs', 1)), d.max(d.gx('rs', 2), '0.0'))}`))}
   L = L * scale;
   C = C * scale;

@@ -137,7 +137,13 @@ Emitted JS is evaluated against the library across all 529 emittable space
 pairs in CI (agreement ≤1e-9, measured ~1e-15), plus hand-templated emitters
 for the solver-based spaces (okhsl, okhsv, hsluv, hpluv — exact cusp and
 boundary solvers in the shader) and per-pixel mixing, gamut mapping, and
-compositing. GPU arithmetic is float32, so end-to-end
+compositing.
+
+And the claim is closed on real hardware: a CI job **compiles and executes
+all 541 emitted GLSL programs on an actual GPU** (headless Chromium;
+SwiftShader on runners) and verifies the outputs against the float64 library
+within float32 arithmetic bounds, and compile-validates every WGSL emission
+against the WebGPU compiler where available (`node tools/gpu-parity.js`). GPU arithmetic is float32, so end-to-end
 shader agreement is bounded by shader precision — the *constants* are
 digit-identical; declare `precision highp float;` in GLSL.
 
@@ -229,6 +235,18 @@ Measured across 3600 hues with each library's own conversions
 (median 1.5e-9) but reaches 3.4e-2 near the blue corner (hue ≈ 264°) —
 larger than the 0.02 JND, in exactly the region where gamut mapping is
 exercised hardest. Same speed, no asterisk.*
+
+Across browser engines (`node tools/browser-bench.js`, object API):
+
+| ns/op | Chromium (V8) | Firefox (SpiderMonkey) | WebKit (JSC) |
+|---|---|---|---|
+| oklch → srgb | 44 | 57 | 618 |
+| srgb → oklch | 66 | 88 | 740 |
+| srgb → rec2020 | 60 | 80 | 584 |
+
+V8 and SpiderMonkey agree with the Node numbers; JavaScriptCore currently
+runs these numeric out-param patterns ~10× slower — measured and reported
+rather than hidden, and on the optimization watchlist.
 
 Every hot path is allocation-free with a caller-provided `out` array —
 verified by `node --expose-gc tools/alloc-audit.js` (< 0.01 B/op on
