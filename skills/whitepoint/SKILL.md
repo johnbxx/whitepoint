@@ -49,6 +49,7 @@ lchuv din99o din99o-lch` · Appearance: `cam16 cam16-ucs hct` · Classic:
 | Shaders | `import { glsl, wgsl, js, glslMix, glslGamutMap, glslComposite, glslBlend } from 'whitepoint/codegen'` |
 | Spectra | `import { reflectanceToXyz, planckianXy, daylightSPD } from 'whitepoint/spectral'` |
 | CVD / CCT | `simulateCVD(c, space, {type, severity?})`, `cctOf(xy) → {cct, duv}` (both in `whitepoint/spectral`) |
+| Paint mixing | `pigmentMix(a, b, t, space?)` (`whitepoint/spectral`) — Kubelka–Munk; t = pigment concentration, NOT perceptual position |
 | YCbCr | `makeYCbCr({matrix:'601'\|'709'\|'2020', range:'full'\|'limited'})` — both REQUIRED; no bare `'ycbcr'` exists |
 
 ## Pitfalls (these cause wrong colors)

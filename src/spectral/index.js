@@ -16,6 +16,7 @@ import { daylightXy } from '../lab/cct.js';
 
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
 export { simulateCVD } from './cvd.js';
+export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 
 /** Sample a uniform-grid spectrum at wavelength λ (nm), linear interpolation. */
 export function sampleSpd(spd, lambda) {

@@ -40,3 +40,10 @@ export function simulateCVD(
   opts: { type: 'protanopia' | 'deuteranopia' | 'tritanopia'; severity?: number },
   out?: number[],
 ): number[];
+
+/** Jakob–Hanika sigmoid reflectance, Newton-solved to integrate back to the color exactly. */
+export function reflectanceOf(coords: ArrayLike<number>, space?: string | object): Spectrum;
+/** Kubelka–Munk mix of two reflectance spectra at concentration t. */
+export function kmMixReflectance(ra: Spectrum, rb: Spectrum, t: number, out?: Spectrum): Spectrum;
+/** Mix two colors as pigments (subtractive, Kubelka–Munk): yellow + blue = green. */
+export function pigmentMix(a: ArrayLike<number>, b: ArrayLike<number>, t: number, space?: string | object, out?: number[]): number[];

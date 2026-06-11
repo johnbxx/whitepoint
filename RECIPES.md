@@ -154,6 +154,21 @@ cctOf([0.4476, 0.4074]);  // { cct: ~2856, duv: ~0 }      — tungsten, on-locus
 // duv > 0 is greenish, < 0 pinkish; CCT is meaningful for |duv| ≲ 0.05
 ```
 
+## Mix paint, not light (Kubelka–Munk)
+
+```js
+import { pigmentMix, reflectanceOf, kmMixReflectance } from 'whitepoint/spectral';
+
+pigmentMix(blue, yellow, 0.7, 'srgb');  // passes through real green —
+// reflectance spectra are Newton-solved per color (Jakob–Hanika sigmoids,
+// no lookup tables), then mixed as K/S per Kubelka–Munk. t is pigment
+// concentration: strong pigments dominate, exactly like real paint.
+
+// hot loops: solve the endpoint spectra once, mix per step
+const ra = reflectanceOf(a), rb = reflectanceOf(b);
+const rm = kmMixReflectance(ra, rb, t); // → reflectanceToXyz(rm) → convert
+```
+
 ## Composite layers without losing precision
 
 ```js
