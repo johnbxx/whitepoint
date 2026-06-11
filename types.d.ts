@@ -12,7 +12,8 @@ export type SpaceId =
   | 'oklab' | 'oklch' | 'lab' | 'lch' | 'hsl' | 'hwb'
   | 'xyz-d65' | 'xyz' | 'xyz-d50'
   | 'ictcp' | 'jzazbz' | 'jzczhz'
-  | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv';
+  | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv'
+  | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct';
 
 export interface ColorSpace {
   readonly id: string;
@@ -66,6 +67,12 @@ export const HSV: ColorSpace;
 export const HSI: ColorSpace;
 export const OKHSL: ColorSpace;
 export const OKHSV: ColorSpace;
+export const BT709: ColorSpace;
+export const DCIP3: ColorSpace;
+export const ACES2065_1: ColorSpace;
+export const ACEScg: ColorSpace;
+export const ACEScc: ColorSpace;
+export const ACEScct: ColorSpace;
 
 export function hsvToSrgb(hsv: ArrayLike<number>, out?: Vec3): Vec3;
 export function srgbToHsv(rgb: ArrayLike<number>, out?: Vec3): Vec3;

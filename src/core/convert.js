@@ -9,7 +9,10 @@
 //
 // Spaces are plain objects; strings are resolved through the registry.
 
-import { sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020 } from '../spaces/rgb.js';
+import {
+  sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020,
+  BT709, DCIP3, ACES2065_1, ACEScg, ACEScc, ACEScct,
+} from '../spaces/rgb.js';
 import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
@@ -47,6 +50,12 @@ export const spaces = {
   'hsi': HSI,
   'okhsl': OKHSL,
   'okhsv': OKHSV,
+  'bt709': BT709,
+  'dci-p3': DCIP3,
+  'aces2065-1': ACES2065_1,
+  'acescg': ACEScg,
+  'acescc': ACEScc,
+  'acescct': ACEScct,
 };
 
 export function resolve(space) {

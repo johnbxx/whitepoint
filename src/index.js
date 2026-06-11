@@ -5,7 +5,10 @@
 export { convert, spaces, resolve, registerRoute } from './core/convert.js';
 
 // Space objects (tree-shakeable direct use: sRGB.toXyz(c, out) …)
-export { sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020 } from './spaces/rgb.js';
+export {
+  sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020,
+  BT709, DCIP3, ACES2065_1, ACEScg, ACEScc, ACEScct,
+} from './spaces/rgb.js';
 export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';

@@ -53,4 +53,45 @@ export const rgbSpaceDefs = {
     white: CSS_D65,
     transfer: 'rec2020',
   },
+
+  // ITU-R BT.709-6 — sRGB primaries, scene-referred OETF
+  bt709: {
+    r: [0.640, 0.330],
+    g: [0.300, 0.600],
+    b: [0.150, 0.060],
+    white: CSS_D65,
+    transfer: 'bt709',
+  },
+
+  // SMPTE RP 431-2 — DCI cinema P3: same primaries as Display P3 but the
+  // DCI calibration white (~6300 K, greenish) and a pure 2.6 gamma.
+  // A non-D65 white handled by the illuminant lab, like ProPhoto's D50.
+  'dci-p3': {
+    r: [0.680, 0.320],
+    g: [0.265, 0.690],
+    b: [0.150, 0.060],
+    white: [0.314, 0.351],
+    transfer: 'gamma26',
+  },
+
+  // AMPAS ACES (TB-2014-004). The ACES white point (~D60) is its own
+  // chromaticity, not a CIE D-series illuminant. AP0 deliberately spans
+  // beyond the spectral locus (note the negative blue y).
+  'aces2065-1': {
+    r: [0.7347, 0.2653],
+    g: [0.0000, 1.0000],
+    b: [0.0001, -0.0770],
+    white: [0.32168, 0.33767],
+    transfer: 'linear',
+  },
+
+  // AP1 primaries (ACEScg working space, S-2014-004); also carries
+  // ACEScc/ACEScct with their log transfers.
+  acescg: {
+    r: [0.713, 0.293],
+    g: [0.165, 0.830],
+    b: [0.128, 0.044],
+    white: [0.32168, 0.33767],
+    transfer: 'linear',
+  },
 };

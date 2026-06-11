@@ -59,6 +59,9 @@ const _p3 = build('display-p3');
 const _a98 = build('a98-rgb');
 const _prophoto = build('prophoto-rgb');
 const _rec2020 = build('rec2020');
+const _dci = build('dci-p3');
+const _ap0 = build('aces2065-1');
+const _ap1 = build('acescg');
 
 export const sRGB = makeRgbSpace('srgb', _srgb.toXyz, _srgb.fromXyz, 'srgb');
 export const sRGBLinear = makeRgbSpace('srgb-linear', _srgb.toXyz, _srgb.fromXyz, 'linear');
@@ -66,5 +69,14 @@ export const DisplayP3 = makeRgbSpace('display-p3', _p3.toXyz, _p3.fromXyz, 'srg
 export const A98RGB = makeRgbSpace('a98-rgb', _a98.toXyz, _a98.fromXyz, 'a98');
 export const ProPhotoRGB = makeRgbSpace('prophoto-rgb', _prophoto.toXyz, _prophoto.fromXyz, 'prophoto');
 export const Rec2020 = makeRgbSpace('rec2020', _rec2020.toXyz, _rec2020.fromXyz, 'rec2020');
+
+// Film & broadcast family. BT.709 shares sRGB's primaries (and therefore its
+// derived matrices — asserted in CI) but encodes with the scene OETF.
+export const BT709 = makeRgbSpace('bt709', _srgb.toXyz, _srgb.fromXyz, 'bt709');
+export const DCIP3 = makeRgbSpace('dci-p3', _dci.toXyz, _dci.fromXyz, 'gamma26');
+export const ACES2065_1 = makeRgbSpace('aces2065-1', _ap0.toXyz, _ap0.fromXyz, 'linear');
+export const ACEScg = makeRgbSpace('acescg', _ap1.toXyz, _ap1.fromXyz, 'linear');
+export const ACEScc = makeRgbSpace('acescc', _ap1.toXyz, _ap1.fromXyz, 'acescc');
+export const ACEScct = makeRgbSpace('acescct', _ap1.toXyz, _ap1.fromXyz, 'acescct');
 
 export { CSS_D50, CSS_D65 };

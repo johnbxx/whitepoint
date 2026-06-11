@@ -56,6 +56,56 @@ function rec2020Encode(v) {
   return v < 0 ? -m : m;
 }
 
+// ITU-R BT.709-6 §1.2 OETF (scene-referred; the display-side BT.1886 EOTF is
+// a different curve — this space encodes camera signal per the standard).
+const BT709_ALPHA = 1.099;
+const BT709_BETA = 0.018;
+function bt709Decode(v) {
+  const a = Math.abs(v);
+  const m = a < BT709_BETA * 4.5 ? a / 4.5 : Math.pow((a + BT709_ALPHA - 1) / BT709_ALPHA, 1 / 0.45);
+  return v < 0 ? -m : m;
+}
+function bt709Encode(v) {
+  const a = Math.abs(v);
+  const m = a < BT709_BETA ? 4.5 * a : BT709_ALPHA * Math.pow(a, 0.45) - (BT709_ALPHA - 1);
+  return v < 0 ? -m : m;
+}
+
+// SMPTE RP 431-2 (DCI-P3 cinema): pure 2.6 gamma.
+function gamma26Decode(v) {
+  const m = Math.pow(Math.abs(v), 2.6);
+  return v < 0 ? -m : m;
+}
+function gamma26Encode(v) {
+  const m = Math.pow(Math.abs(v), 1 / 2.6);
+  return v < 0 ? -m : m;
+}
+
+// ACEScc (AMPAS S-2014-003): pure-log encoding of AP1 scene-linear.
+const ACESCC_MIN = (Math.log2(Math.pow(2, -16)) + 9.72) / 17.52; // encode(x ≤ 0)
+function acesccDecode(v) {
+  if (v < (9.72 - 15) / 17.52) return (Math.pow(2, v * 17.52 - 9.72) - Math.pow(2, -16)) * 2;
+  if (v < (Math.log2(65504) + 9.72) / 17.52) return Math.pow(2, v * 17.52 - 9.72);
+  return 65504;
+}
+function acesccEncode(v) {
+  if (v <= 0) return ACESCC_MIN;
+  if (v < Math.pow(2, -15)) return (Math.log2(Math.pow(2, -16) + v * 0.5) + 9.72) / 17.52;
+  return (Math.log2(v) + 9.72) / 17.52;
+}
+
+// ACEScct (AMPAS S-2016-001): ACEScc with a linear toe.
+const ACESCCT_A = 10.5402377416545;
+const ACESCCT_B = 0.0729055341958355;
+function acescctDecode(v) {
+  if (v > 0.155251141552511) return Math.pow(2, v * 17.52 - 9.72);
+  return (v - ACESCCT_B) / ACESCCT_A;
+}
+function acescctEncode(v) {
+  if (v <= 0.0078125) return ACESCCT_A * v + ACESCCT_B;
+  return (Math.log2(v) + 9.72) / 17.52;
+}
+
 const identity = (v) => v;
 
 export const transfer = {
@@ -63,5 +113,9 @@ export const transfer = {
   a98:      { decode: a98Decode,      encode: a98Encode },
   prophoto: { decode: prophotoDecode, encode: prophotoEncode },
   rec2020:  { decode: rec2020Decode,  encode: rec2020Encode },
+  bt709:    { decode: bt709Decode,    encode: bt709Encode },
+  gamma26:  { decode: gamma26Decode,  encode: gamma26Encode },
+  acescc:   { decode: acesccDecode,   encode: acesccEncode },
+  acescct:  { decode: acescctDecode,  encode: acescctEncode },
   linear:   { decode: identity,       encode: identity },
 };
