@@ -14,12 +14,17 @@
     "./codegen": {
       "types": "./codegen.d.ts",
       "import": "./src/codegen/index.js"
+    },
+    "./spectral": {
+      "types": "./spectral.d.ts",
+      "import": "./src/spectral/index.js"
     }
   },
   "files": [
     "src",
     "types.d.ts",
     "codegen.d.ts",
+    "spectral.d.ts",
     "NORTHSTAR.md"
   ],
   "scripts": {
@@ -27,7 +32,7 @@
     "precision": "node tools/precision-table.js",
     "bench": "node tools/bench.js",
     "alloc": "node --expose-gc tools/alloc-audit.js",
-    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts"
+    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts"
   },
   "keywords": [
     "color",
