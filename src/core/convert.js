@@ -14,6 +14,7 @@ import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
 import { XYZD65, XYZD50 } from '../spaces/xyz.js';
+import { ICtCp, Jzazbz, JzCzhz } from '../spaces/hdr.js';
 import { rectToPolar, polarToRect } from './polar.js';
 import { transfer } from '../constants/transfer.js';
 import { mul } from './mat3.js';
@@ -34,6 +35,9 @@ export const spaces = {
   'xyz-d65': XYZD65,
   'xyz': XYZD65,
   'xyz-d50': XYZD50,
+  'ictcp': ICtCp,
+  'jzazbz': Jzazbz,
+  'jzczhz': JzCzhz,
 };
 
 export function resolve(space) {

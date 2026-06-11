@@ -10,6 +10,8 @@ export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';
 export { XYZD65, XYZD50 } from './spaces/xyz.js';
+export { ICtCp, Jzazbz, JzCzhz } from './spaces/hdr.js';
+export { pqEncode, pqDecode, YW } from './constants/hdr.js';
 
 // The illuminant lab
 export { adapt, adaptMatrix } from './lab/adapt.js';

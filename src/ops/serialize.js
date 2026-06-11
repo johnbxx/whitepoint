@@ -22,6 +22,9 @@ const COLOR_FN_IDS = {
   'rec2020': 'rec2020',
   'xyz-d65': 'xyz-d65',
   'xyz-d50': 'xyz-d50',
+  // CSS Color HDR draft predefined spaces
+  'ictcp': 'ictcp',
+  'jzazbz': 'jzazbz',
 };
 
 /**

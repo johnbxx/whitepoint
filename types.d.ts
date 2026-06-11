@@ -10,7 +10,8 @@ export type TransferName = 'srgb' | 'a98' | 'prophoto' | 'rec2020' | 'linear';
 export type SpaceId =
   | 'srgb' | 'srgb-linear' | 'display-p3' | 'a98-rgb' | 'prophoto-rgb' | 'rec2020'
   | 'oklab' | 'oklch' | 'lab' | 'lch' | 'hsl' | 'hwb'
-  | 'xyz-d65' | 'xyz' | 'xyz-d50';
+  | 'xyz-d65' | 'xyz' | 'xyz-d50'
+  | 'ictcp' | 'jzazbz' | 'jzczhz';
 
 export interface ColorSpace {
   readonly id: string;
@@ -55,6 +56,16 @@ export const HSL: ColorSpace;
 export const HWB: ColorSpace;
 export const XYZD65: ColorSpace;
 export const XYZD50: ColorSpace;
+export const ICtCp: ColorSpace;
+export const Jzazbz: ColorSpace;
+export const JzCzhz: ColorSpace;
+
+/** SMPTE ST 2084 inverse EOTF: absolute cd/m² → PQ signal. */
+export function pqEncode(nits: number): number;
+/** SMPTE ST 2084 EOTF: PQ signal → absolute cd/m². */
+export function pqDecode(signal: number): number;
+/** BT.2408 diffuse-white anchor (cd/m²) mapping relative Y=1 to absolute luminance. */
+export const YW: number;
 
 export function hslToSrgb(hsl: ArrayLike<number>, out?: Vec3): Vec3;
 export function srgbToHsl(rgb: ArrayLike<number>, out?: Vec3): Vec3;
