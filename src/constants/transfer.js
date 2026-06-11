@@ -58,8 +58,8 @@ function rec2020Encode(v) {
 
 // ITU-R BT.709-6 §1.2 OETF (scene-referred; the display-side BT.1886 EOTF is
 // a different curve — this space encodes camera signal per the standard).
-const BT709_ALPHA = 1.099;
-const BT709_BETA = 0.018;
+export const BT709_ALPHA = 1.099;
+export const BT709_BETA = 0.018;
 function bt709Decode(v) {
   const a = Math.abs(v);
   const m = a < BT709_BETA * 4.5 ? a / 4.5 : Math.pow((a + BT709_ALPHA - 1) / BT709_ALPHA, 1 / 0.45);
@@ -82,7 +82,7 @@ function gamma26Encode(v) {
 }
 
 // ACEScc (AMPAS S-2014-003): pure-log encoding of AP1 scene-linear.
-const ACESCC_MIN = (Math.log2(Math.pow(2, -16)) + 9.72) / 17.52; // encode(x ≤ 0)
+export const ACESCC_MIN = (Math.log2(Math.pow(2, -16)) + 9.72) / 17.52; // encode(x ≤ 0)
 function acesccDecode(v) {
   if (v < (9.72 - 15) / 17.52) return (Math.pow(2, v * 17.52 - 9.72) - Math.pow(2, -16)) * 2;
   if (v < (Math.log2(65504) + 9.72) / 17.52) return Math.pow(2, v * 17.52 - 9.72);
@@ -95,8 +95,8 @@ function acesccEncode(v) {
 }
 
 // ACEScct (AMPAS S-2016-001): ACEScc with a linear toe.
-const ACESCCT_A = 10.5402377416545;
-const ACESCCT_B = 0.0729055341958355;
+export const ACESCCT_A = 10.5402377416545;
+export const ACESCCT_B = 0.0729055341958355;
 function acescctDecode(v) {
   if (v > 0.155251141552511) return Math.pow(2, v * 17.52 - 9.72);
   return (v - ACESCCT_B) / ACESCCT_A;
@@ -119,10 +119,10 @@ function rec2100PqEncode(v) {
   return pqEncode(v * YW);
 }
 
-const HLG_A = 0.17883277;
-const HLG_B = 1 - 4 * HLG_A;
-const HLG_C = 0.5 - HLG_A * Math.log(4 * HLG_A);
-const HLG_SCALE = 3.7743; // CSS Color HDR: 18% grey → 0.38, media white → 0.75
+export const HLG_A = 0.17883277;
+export const HLG_B = 1 - 4 * HLG_A;
+export const HLG_C = 0.5 - HLG_A * Math.log(4 * HLG_A);
+export const HLG_SCALE = 3.7743; // CSS Color HDR: 18% grey → 0.38, media white → 0.75
 
 function rec2100HlgDecode(v) {
   if (v <= 0) return 0;

@@ -15,11 +15,20 @@
 // HSL and HWB are deliberately absent from v0 codegen (max/min/branch-heavy;
 // they'll land with the gamut-mapping shader work).
 
-import { sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020 } from '../spaces/rgb.js';
+import {
+  sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020,
+  BT709, DCIP3, ACES2065_1, ACEScg, ACEScc, ACEScct, Rec2100PQ, Rec2100HLG,
+} from '../spaces/rgb.js';
 import { XYZ_TO_LMS, LMS_TO_XYZ, OKLAB_M2_INV } from '../spaces/oklab.js';
 import { OKLAB_M2 } from '../constants/oklab.js';
 import { adaptMatrix } from '../lab/adapt.js';
 import { CSS_D65, CSS_D50, CSS_D50_XYZ } from '../constants/whitepoints.js';
+import {
+  ICTCP_XYZ_TO_LMS, ICTCP_LMS_TO_XYZ, ITP_TO_LMS,
+  JZ_LMS_TO_XYZP, JZ_IAB_TO_LMS,
+} from '../spaces/hdr.js';
+import { ICTCP_LMS_TO_ITP, JZ_XYZ_TO_LMS, JZ_LMS_TO_IAB, JZ_B, JZ_G, YW } from '../constants/hdr.js';
+import { invert } from '../core/mat3.js';
 
 function rgbChains(space) {
   const toXyzOps = [];
@@ -91,4 +100,53 @@ export const codegenSpaces = {
     toXyzOps: [{ k: 'mat3', m: M_D50_TO_D65 }],
     fromXyzOps: [{ k: 'mat3', m: M_D65_TO_D50 }],
   },
+
+  // Film & broadcast (Tier 1: transfer + derived matrices)
+  'bt709': rgbChains(BT709),
+  'dci-p3': rgbChains(DCIP3),
+  'aces2065-1': rgbChains(ACES2065_1),
+  'acescg': rgbChains(ACEScg),
+  'acescc': rgbChains(ACEScc),
+  'acescct': rgbChains(ACEScct),
+  'rec2100-pq': rgbChains(Rec2100PQ),
+  'rec2100-hlg': rgbChains(Rec2100HLG),
+
+  // HDR perceptual (Tier 2: matrix → PQ → matrix chains)
+  'ictcp': {
+    toXyzOps: [
+      { k: 'mat3', m: ITP_TO_LMS },
+      { k: 'transfer', name: 'pqabs', dir: 'decode' },
+      { k: 'mat3', m: ICTCP_LMS_TO_XYZ },
+    ],
+    fromXyzOps: [
+      { k: 'mat3', m: ICTCP_XYZ_TO_LMS },
+      { k: 'transfer', name: 'pqabs', dir: 'encode' },
+      { k: 'mat3', m: ICTCP_LMS_TO_ITP },
+    ],
+  },
 };
+
+// Jzazbz pre-adaptation (xp = bX + (1−b)Z, yp = (1−g)X + gY) as a matrix —
+// fused with the LMS matrix at emission time.
+const JZ_PRE = [JZ_B, 0, 1 - JZ_B, 1 - JZ_G, JZ_G, 0, 0, 0, 1];
+
+codegenSpaces['jzazbz'] = {
+  toXyzOps: [
+    { k: 'jzInv' },
+    { k: 'mat3', m: JZ_IAB_TO_LMS },
+    { k: 'transfer', name: 'jzpq', dir: 'decode' },
+    { k: 'mat3', m: JZ_LMS_TO_XYZP },
+    { k: 'mat3', m: invert(JZ_PRE) },
+    { k: 'mulW', w: [1 / YW, 1 / YW, 1 / YW] },
+  ],
+  fromXyzOps: [
+    { k: 'mulW', w: [YW, YW, YW] },
+    { k: 'clamp0' },
+    { k: 'mat3', m: JZ_PRE },
+    { k: 'mat3', m: JZ_XYZ_TO_LMS },
+    { k: 'transfer', name: 'jzpq', dir: 'encode' },
+    { k: 'mat3', m: JZ_LMS_TO_IAB },
+    { k: 'jzFwd' },
+  ],
+};
+codegenSpaces['jzczhz'] = polarize(codegenSpaces['jzazbz']);

@@ -21,9 +21,9 @@ import {
 
 // XYZ-D65 (relative) → LMS, with the BT.2100 RGB→LMS exact rationals
 // composed onto our derived rec2020 matrix. Scale by YW folds in linearly.
-const ICTCP_XYZ_TO_LMS = mul(ICTCP_RGB_TO_LMS, Rec2020.m.fromXyz).map((v) => v * YW);
-const ICTCP_LMS_TO_XYZ = invert(ICTCP_XYZ_TO_LMS);
-const ITP_TO_LMS = invert(ICTCP_LMS_TO_ITP);
+export const ICTCP_XYZ_TO_LMS = mul(ICTCP_RGB_TO_LMS, Rec2020.m.fromXyz).map((v) => v * YW);
+export const ICTCP_LMS_TO_XYZ = invert(ICTCP_XYZ_TO_LMS);
+export const ITP_TO_LMS = invert(ICTCP_LMS_TO_ITP);
 
 const TMP = [0, 0, 0];
 
@@ -47,8 +47,8 @@ export const ICtCp = {
 
 // ---- Jzazbz ----
 
-const JZ_LMS_TO_XYZP = invert(JZ_XYZ_TO_LMS);
-const JZ_IAB_TO_LMS = invert(JZ_LMS_TO_IAB);
+export const JZ_LMS_TO_XYZP = invert(JZ_XYZ_TO_LMS);
+export const JZ_IAB_TO_LMS = invert(JZ_LMS_TO_IAB);
 
 export const Jzazbz = {
   id: 'jzazbz',
