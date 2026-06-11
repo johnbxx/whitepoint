@@ -246,6 +246,35 @@ const _lin = [0, 0, 0];
 // Σᵢ Mⱼᵢ(uᵢ + vᵢt)³ — a cubic in t — so Newton converges quadratically to
 // ~1e-11 in 2–3 steps from a 4-iteration bisection seed. Exact equations,
 // machine-precision root; no fitted constants.
+/**
+ * Exact maximum in-gamut chroma at a fixed OKLCH lightness and hue —
+ * bracketed bisection on the channel cubics (checking both 0 and 1 bounds).
+ * The exact counterpart of Ottosson's find_gamut_intersection along
+ * constant L; used by OKHSL.
+ */
+export function maxChromaAt(L, h, gamut, iterations = 48) {
+  if (L <= 0 || L >= 1) return 0;
+  const G = resolveRgbGamut(gamut, 'maxChromaAt');
+  const p = okParams(G);
+  const hr = h * DEG2RAD;
+  const a = Math.cos(hr), b = Math.sin(hr);
+  const kl = p.l1 * a + p.l2 * b;
+  const km = p.m1 * a + p.m2 * b;
+  const ks = p.s1 * a + p.s2 * b;
+  let lo = 0, hi = 0.05;
+  while (hi < 2) {
+    linRgbAtLC(p, kl, km, ks, L, hi, _lin);
+    if (!inRange(_lin, 0)) break;
+    lo = hi; hi *= 2;
+  }
+  for (let i = 0; i < iterations; i++) {
+    const mid = 0.5 * (lo + hi);
+    linRgbAtLC(p, kl, km, ks, L, mid, _lin);
+    if (inRange(_lin, 0)) lo = mid; else hi = mid;
+  }
+  return lo;
+}
+
 function cuspMap(oklch, G, outOklch) {
   const p = okParams(G);
   if (oklch[0] >= 1) {

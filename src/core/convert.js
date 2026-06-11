@@ -15,6 +15,9 @@ import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
 import { XYZD65, XYZD50 } from '../spaces/xyz.js';
 import { ICtCp, Jzazbz, JzCzhz } from '../spaces/hdr.js';
+import { Luv, LCHuv } from '../spaces/luv.js';
+import { HSV, HSI, hsvToSrgb, srgbToHsv, hsiToSrgb, srgbToHsi } from '../spaces/hsv.js';
+import { OKHSL, OKHSV } from '../spaces/okhsl.js';
 import { rectToPolar, polarToRect } from './polar.js';
 import { transfer } from '../constants/transfer.js';
 import { mul } from './mat3.js';
@@ -38,6 +41,12 @@ export const spaces = {
   'ictcp': ICtCp,
   'jzazbz': Jzazbz,
   'jzczhz': JzCzhz,
+  'luv': Luv,
+  'lchuv': LCHuv,
+  'hsv': HSV,
+  'hsi': HSI,
+  'okhsl': OKHSL,
+  'okhsv': OKHSV,
 };
 
 export function resolve(space) {
@@ -65,6 +74,10 @@ registerRoute('srgb', 'hwb', srgbToHwb);
 const HTMP = [0, 0, 0];
 registerRoute('hsl', 'hwb', (c, out) => srgbToHwb(hslToSrgb(c, HTMP), out));
 registerRoute('hwb', 'hsl', (c, out) => srgbToHsl(hwbToSrgb(c, HTMP), out));
+registerRoute('hsv', 'srgb', hsvToSrgb);
+registerRoute('srgb', 'hsv', srgbToHsv);
+registerRoute('hsi', 'srgb', hsiToSrgb);
+registerRoute('srgb', 'hsi', srgbToHsi);
 
 registerRoute('oklab', 'oklch', (c, out) => rectToPolar(c, out));
 registerRoute('oklch', 'oklab', (c, out) => polarToRect(c, out));

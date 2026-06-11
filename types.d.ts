@@ -11,7 +11,8 @@ export type SpaceId =
   | 'srgb' | 'srgb-linear' | 'display-p3' | 'a98-rgb' | 'prophoto-rgb' | 'rec2020'
   | 'oklab' | 'oklch' | 'lab' | 'lch' | 'hsl' | 'hwb'
   | 'xyz-d65' | 'xyz' | 'xyz-d50'
-  | 'ictcp' | 'jzazbz' | 'jzczhz';
+  | 'ictcp' | 'jzazbz' | 'jzczhz'
+  | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv';
 
 export interface ColorSpace {
   readonly id: string;
@@ -59,6 +60,19 @@ export const XYZD50: ColorSpace;
 export const ICtCp: ColorSpace;
 export const Jzazbz: ColorSpace;
 export const JzCzhz: ColorSpace;
+export const Luv: ColorSpace;
+export const LCHuv: ColorSpace;
+export const HSV: ColorSpace;
+export const HSI: ColorSpace;
+export const OKHSL: ColorSpace;
+export const OKHSV: ColorSpace;
+
+export function hsvToSrgb(hsv: ArrayLike<number>, out?: Vec3): Vec3;
+export function srgbToHsv(rgb: ArrayLike<number>, out?: Vec3): Vec3;
+export function hsiToSrgb(hsi: ArrayLike<number>, out?: Vec3): Vec3;
+export function srgbToHsi(rgb: ArrayLike<number>, out?: Vec3): Vec3;
+/** Exact max in-gamut chroma at fixed OKLCH lightness and hue. */
+export function maxChromaAt(L: number, h: number, gamut: SpaceLike, iterations?: number): number;
 
 /** SMPTE ST 2084 inverse EOTF: absolute cd/m² → PQ signal. */
 export function pqEncode(nits: number): number;

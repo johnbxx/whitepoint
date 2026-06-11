@@ -12,6 +12,10 @@ export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/h
 export { XYZD65, XYZD50 } from './spaces/xyz.js';
 export { ICtCp, Jzazbz, JzCzhz } from './spaces/hdr.js';
 export { pqEncode, pqDecode, YW } from './constants/hdr.js';
+export { Luv, LCHuv } from './spaces/luv.js';
+export { HSV, HSI, hsvToSrgb, srgbToHsv, hsiToSrgb, srgbToHsi } from './spaces/hsv.js';
+export { OKHSL, OKHSV } from './spaces/okhsl.js';
+export { maxChromaAt } from './gamut/index.js';
 
 // The illuminant lab
 export { adapt, adaptMatrix } from './lab/adapt.js';

@@ -146,7 +146,10 @@ export function jsGamutMap(gamut, { name = gamutMapName(gamut) } = {}) {
 // Per-pixel interpolation in any supported space with spec hue arcs — the
 // core of gradient shaders. Coordinates must already be in `space`.
 
-const MIX_HUE_CHANNEL = { hsl: 0, hwb: 0, lch: 2, oklch: 2 };
+const MIX_HUE_CHANNEL = {
+  hsl: 0, hwb: 0, hsv: 0, hsi: 0, okhsl: 0, okhsv: 0,
+  lch: 2, oklch: 2, lchuv: 2, jzczhz: 2,
+};
 const HUE_METHODS = ['shorter', 'longer', 'increasing', 'decreasing'];
 
 // Hue delta in the target language, from normalized hues ha/hb (CSS §12.4).
