@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — recipes</title>
+<meta name="description" content="Job-to-be-done recipes for the whitepoint color library: gradients, gamut mapping, illuminants, HCT palettes, shaders, spectra, compositing.">
+<style>
+  :root {
+    --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
+    --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, sans-serif; padding-bottom: 6rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; text-decoration: none; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; padding: 3rem 0 0.25rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 0.6rem; letter-spacing: -0.01em; }
+  p { color: var(--dim); max-width: 46rem; margin-bottom: 0.6rem; }
+  p strong { color: var(--text); }
+  ul { color: var(--dim); margin: 0.4rem 0 0.8rem 1.2rem; max-width: 46rem; }
+  li { margin-bottom: 0.35rem; }
+  li strong { color: var(--text); }
+  pre, code { font-family: var(--mono); font-size: 0.85rem; }
+  pre { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 1rem 1.25rem; overflow-x: auto; line-height: 1.5; margin: 0.6rem 0 1rem; }
+  code.inline { background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a href="./index.html">demos</a>
+    <a href="./accuracy.html">accuracy</a>
+    <a class="here" href="./recipes.html">recipes</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/johnbxx/whitepoint">github</a>
+  </div>
+</div></nav>
+<main>
+<h1>Recipes</h1>
+<p>Job-to-be-done snippets. Conventions throughout: colors are plain arrays, channels are 0–1 floats (hue in degrees; CIE Lab/Luv L runs 0–100), every function takes an optional <code class="inline">out</code> array for zero-allocation loops.</p>
+<h2>Hex in, any space out</h2>
+<pre>import { fromHex, toHex, convert } from 'whitepoint';
+
+const oklch = convert(fromHex('#4ba3f7'), 'srgb', 'oklch');
+// → [0.6976, 0.1334, 250.4]
+toHex(convert([0.6976, 0.1334, 250.4], 'oklch', 'srgb')); // '#4ba3f7'</pre>
+<h2>A perceptual gradient (CSS output)</h2>
+<pre>import { mix, convert, serialize, toGamut } from 'whitepoint';
+
+const a = convert(fromHex('#0b3d91'), 'srgb', 'oklch');
+const b = convert(fromHex('#f7b32b'), 'srgb', 'oklch');
+const stops = Array.from({ length: 9 }, (_, i) =&gt; {
+  const c = mix(a, b, i / 8, 'oklch');                 // CSS Color 4 §12 hue arcs
+  return serialize(toGamut(c, 'oklch'), 'oklch');      // gamut-safe css strings
+});</pre>
+<h2>The same gradient, in your fragment shader</h2>
+<pre>import { glslMix, glsl } from 'whitepoint/codegen';
+
+const shaderSrc = `
+  ${glsl('oklch', 'srgb')}        // vec3 wp_oklch_to_srgb(vec3 c)
+  ${glslMix('oklch')}             // vec3 wp_mix_oklch_shorter(vec3 a, vec3 b, float t)
+  // in main(): color = wp_oklch_to_srgb(wp_mix_oklch_shorter(A, B, t));
+`;
+// constants are digit-identical to the JS above — same tables, parity-tested</pre>
+<h2>Display a wide-gamut color on an sRGB screen</h2>
+<pre>import { toGamut, convert } from 'whitepoint';
+
+const p3Color = [0, 1, 0.2];                            // out of sRGB
+const safe = toGamut(convert(p3Color, 'display-p3', 'oklch'), 'oklch',
+  { gamut: 'srgb', method: 'css' });                    // spec algorithm
+// method: 'cusp' = faster, hue-exact; 'clip' = the blunt baseline</pre>
+<h2>Check (and fix) text contrast</h2>
+<pre>import { contrastWCAG2, mix, convert } from 'whitepoint';
+
+let fg = convert(fromHex('#888888'), 'srgb', 'oklch');
+const bg = [1, 1, 1];
+while (contrastWCAG2(convert(fg, 'oklch', 'srgb'), bg) &lt; 4.5) {
+  fg[0] -= 0.01;                                        // darken in OKLCH: hue-stable
+}</pre>
+<h2>Re-light a brand color (the illuminant lab)</h2>
+<pre>import { adapt, convert, illuminantFromCCT } from 'whitepoint';
+
+const xyz = convert(brandSrgb, 'srgb', 'xyz-d65');
+const underStoreLight = adapt(xyz, 'F2', 'D65');        // fluorescent → display
+const underTungsten  = adapt(xyz, 'A', 'D65', undefined, { cat: 'cat16' });
+const at5000K        = adapt(xyz, illuminantFromCCT(5000), 'D65');</pre>
+<h2>A Material-style tonal palette via HCT</h2>
+<pre>import { convert } from 'whitepoint';
+
+const [h, c] = convert(seedSrgb, 'srgb', 'hct');
+const tones = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95].map((t) =&gt;
+  toHex(toGamut(convert([h, c, t], 'hct', 'srgb'), 'srgb', { method: 'cusp' })));</pre>
+<h2>Sort by perceptual similarity</h2>
+<pre>import { deltaE2000, deltaEOK, convert } from 'whitepoint';
+
+const target = convert(pick, 'srgb', 'lab');
+swatches.sort((p, q) =&gt;
+  deltaE2000(convert(p, 'srgb', 'lab'), target) -
+  deltaE2000(convert(q, 'srgb', 'lab'), target));
+// deltaEOK (fast) and deltaECAM16 (appearance-grade) take the same shape</pre>
+<h2>HDR: tone operations in ICtCp, on the GPU</h2>
+<pre>import { glsl } from 'whitepoint/codegen';
+
+const src = `
+  ${glsl('rec2100-pq', 'ictcp')}   // decode PQ signal into ICtCp
+  ${glsl('ictcp', 'rec2100-pq')}   // and back after your tone curve on I
+`;</pre>
+<h2>VFX handoff: sRGB ↔ ACEScg</h2>
+<pre>import { convert } from 'whitepoint';
+
+const acescg = convert(srgb, 'srgb', 'acescg');          // scene-linear AP1
+const log = convert(acescg, 'acescg', 'acescc');         // colorist log
+// ~D60 white point handled by the same CAT machinery as everything else</pre>
+<h2>Spectral: a measured sample under two lights</h2>
+<pre>import { reflectanceToXyz, illuminantASPD, D65_SPD } from 'whitepoint/spectral';
+import { convert, adapt } from 'whitepoint';
+
+const refl = { start: 380, step: 10, values: measuredReflectance }; // 0–1
+const day = reflectanceToXyz(refl);                       // D65 by default
+const night = reflectanceToXyz(refl, { illuminant: illuminantASPD() });
+// compare appearance: adapt 'night' to D65 first, then deltaE in oklab</pre>
+<h2>Composite layers without losing precision</h2>
+<pre>import { premultiply, overStack, unpremultiply, blend } from 'whitepoint';
+
+const layers = sprites.map((s) =&gt; premultiply(s));       // [r,g,b,a] straight → premul
+const flat = unpremultiply(overStack(layers, 'srgb-linear')); // divide ONCE, at the end
+const moody = blend(top, bottom, 'soft-light');           // W3C blend modes, straight alpha</pre>
+<h2>YCbCr from a JPEG decoder</h2>
+<pre>import { convert, makeYCbCr } from 'whitepoint';
+
+convert([y, cb, cr].map((v) =&gt; v / 255), 'ycbcr-601-full', 'srgb'); // JFIF
+const video = makeYCbCr({ matrix: '709', range: 'limited' });        // both REQUIRED
+// there is deliberately no bare 'ycbcr' — the name underdetermines the math</pre>
+<h2>The zero-allocation hot loop</h2>
+<pre>import { convert, OKLCH, sRGB } from 'whitepoint';
+
+const out = [0, 0, 0];
+for (const px of pixels) {
+  convert(px, OKLCH, sRGB, out);   // space OBJECTS + out array: 47 ns, 0 B
+  write(out);
+}</pre>
+<h2>CSS string parsing (interop, on purpose)</h2>
+<pre>// whitepoint refuses input parsing by design (grammar churn, `none`
+// semantics). The one-liner interop:
+import { parse } from 'culori';
+const { r, g, b } = parse('oklch(70% 0.15 250deg)') /* culori converts */;
+// …or keep coords in whitepoint arrays from the start.</pre>
+<h2>Pitfalls worth knowing</h2>
+<ul>
+<li><strong>Lab/Luv L is 0–100; OKLab L is 0–1</strong> — both per spec; don't mix them up.</li>
+<li><strong>HDR/log spaces clamp negative linear light</strong> (<code class="inline">ictcp</code>, <code class="inline">jzazbz</code>, <code class="inline">rec2100-*</code>, <code class="inline">acescc/t</code>): out-of-container colors don't round-trip, by design. <strong>OKHSL is only invertible inside sRGB</strong> (its s&gt;0.8 mapping has a pole at the boundary).</li>
+<li><strong>Alpha is not a coordinate.</strong> 3-channel everywhere; alpha-aware entry points (<code class="inline">mixAlpha</code>, <code class="inline">composite</code>, <code class="inline">serialize</code>'s option) are explicit.</li>
+<li><strong>Compositing on hue-polar spaces throws</strong> — there's no defensible meaning.</li>
+<li>The default <code class="inline">mix()</code> hue arc is <code class="inline">'shorter'</code>; CSS's other three (<code class="inline">longer</code>/<code class="inline">increasing</code>/<code class="inline">decreasing</code>) are options.</li>
+</ul>
+
+</main>
+</body>
+</html>

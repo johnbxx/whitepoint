@@ -3,10 +3,11 @@
 > **A research-grade color laboratory for the web.**
 > **Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.**
 
+[![npm](https://img.shields.io/npm/v/whitepoint)](https://www.npmjs.com/package/whitepoint)
 [![CI](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml/badge.svg)](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml)
 &nbsp;[**live demos**](https://johnbxx.github.io/whitepoint/)
 · [**measured accuracy**](https://johnbxx.github.io/whitepoint/accuracy.html)
-· [**recipes**](./RECIPES.md)
+· [**recipes**](https://johnbxx.github.io/whitepoint/recipes.html)
 · [north star](./NORTHSTAR.md)
 
 Every conversion is generated from one table of cited constants. The matrix that

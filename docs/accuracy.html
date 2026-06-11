@@ -27,12 +27,26 @@
   .legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
   code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
   .note { color: var(--dim); font-size: 0.85rem; margin-top: 0.75rem; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; text-decoration: none; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
 </style>
 </head>
 <body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a href="./index.html">demos</a>
+    <a class="here" href="./accuracy.html">accuracy</a>
+    <a href="./recipes.html">recipes</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/johnbxx/whitepoint">github</a>
+  </div>
+</div></nav>
 <main>
   <header>
-    <p class="crumb"><a href="./index.html">← whitepoint</a></p>
     <h1>Measured accuracy</h1>
     <p class="sub">Every chart on this page is generated from the repository's own
     measurement scripts (<code>tools/cusp-accuracy.js</code>,

@@ -57,9 +57,24 @@
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
   footer { margin-top: 5rem; color: var(--dim); font-size: 0.85rem; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; text-decoration: none; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
 </style>
 </head>
 <body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a class="here" href="./index.html">demos</a>
+    <a href="./accuracy.html">accuracy</a>
+    <a href="./recipes.html">recipes</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/johnbxx/whitepoint">github</a>
+  </div>
+</div></nav>
 <main>
   <header>
     <h1><span class="wp">whitepoint</span><br>a research-grade color laboratory for the web</h1>
@@ -67,9 +82,6 @@
     Every constant cited, every matrix derived, every claim measured. Every color on this page
     is computed by the library, right now, in your browser.</p>
     <pre>npm install whitepoint</pre>
-    <p style="margin-top:0.6rem; font-size:0.9rem"><a href="./accuracy.html">measured accuracy →</a>
-    &nbsp;·&nbsp; <a href="https://github.com/johnbxx/whitepoint/blob/main/RECIPES.md">recipes →</a>
-    &nbsp;·&nbsp; <a href="https://github.com/johnbxx/whitepoint">source →</a></p>
     <div class="numbers">
       <div><b>42</b><span>color spaces</span></div>
       <div><b>10⁻¹⁵</b><span>round-trip error</span></div>
