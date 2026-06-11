@@ -24,7 +24,7 @@ false` (tree-shakes to what you import). Two entry points: `whitepoint`
 
 ## Conversions
 
-**33 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
+**36 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
 (hue in degrees). No rounding anywhere except the explicit byte boundary.
 Every function takes an optional `out` array for zero-allocation hot loops.
 
@@ -41,6 +41,7 @@ OKLCH.toXyz([0.7, 0.15, 250], out);                // tree-shakeable, zero-alloc
 | HDR (CSS Color HDR / BT.2100) | rec2100-pq, rec2100-hlg, ictcp, jzazbz, jzczhz |
 | Film & broadcast | aces2065-1, acescg, acescc, acescct, bt709, dci-p3 |
 | Perceptual & picking | okhsl, okhsv, luv, lchuv, din99o, din99o-lch |
+| Appearance models | cam16, cam16-ucs, hct — full CAM16 with configurable viewing conditions; in no other JS library |
 | Classic | hsv, hsi |
 
 The weird ones are first-class citizens: ACES carries its ~D60 white through
