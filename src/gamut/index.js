@@ -127,6 +127,7 @@ function okParams(G) {
       m1: OKLAB_M2_INV[4], m2: OKLAB_M2_INV[5],
       s1: OKLAB_M2_INV[7], s2: OKLAB_M2_INV[8],
       whiteOklch: convert([1, 1, 1], G, 'oklch'),
+      cusps: new Map(), // integer-keyed (centidegree hue) — no string keys in hot paths
     };
     _okParams.set(G.id, p);
   }
@@ -195,15 +196,12 @@ export function findCuspNumerical(h, gamut) {
 // (after Ottosson 2021, who fits only to seed his iteration — we bracket
 // and bisect the cubic instead). Verified against findCuspNumerical in CI.
 
-const _cuspCache = new Map();
-
 export function findCusp(h, gamut) {
   const G = resolveRgbGamut(gamut, 'findCusp');
-  const key = G.id + '|' + Math.round(h * 100);
-  let cusp = _cuspCache.get(key);
-  if (cusp) return cusp;
-
   const p = okParams(G);
+  const key = Math.round((((h % 360) + 360) % 360) * 100);
+  let cusp = p.cusps.get(key);
+  if (cusp) return cusp;
   const hr = h * DEG2RAD;
   const a = Math.cos(hr), b = Math.sin(hr);
   const kl = p.l1 * a + p.l2 * b;
@@ -236,7 +234,7 @@ export function findCusp(h, gamut) {
   const s = lo;
   const L = Math.cbrt(1 / g(s)[1]);
   cusp = [L, s * L];
-  _cuspCache.set(key, cusp);
+  p.cusps.set(key, cusp);
   return cusp;
 }
 

@@ -15,7 +15,8 @@
   "scripts": {
     "test": "node --test",
     "precision": "node tools/precision-table.js",
-    "bench": "node tools/bench.js"
+    "bench": "node tools/bench.js",
+    "alloc": "node --expose-gc tools/alloc-audit.js"
   },
   "keywords": [
     "color",

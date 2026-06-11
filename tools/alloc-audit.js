@@ -1,0 +1,44 @@
+// Zero-allocation audit for the hot paths (north star: speed pillar).
+// Usage: node --expose-gc tools/alloc-audit.js
+//
+// Method: warm the path (JIT + caches), force GC, run N iterations with a
+// caller-provided out array, and measure heap growth per op. Incidental
+// engine noise lands well under 0.5 B/op; a per-call allocation shows up as
+// ≥ 16 B/op. Exits nonzero on failure so CI can enforce it.
+
+import { convert, toGamut, adapt, sRGB, OKLCH } from '../src/index.js';
+
+if (typeof global.gc !== 'function') {
+  console.error('run with: node --expose-gc tools/alloc-audit.js');
+  process.exit(2);
+}
+
+const out = [0, 0, 0];
+const oklch = [0.7, 0.21, 250];
+const srgb = [0.3, 0.6, 0.9];
+const xyz = [0.4, 0.5, 0.3];
+const N = 2_000_000;
+
+let failed = false;
+
+function audit(label, fn) {
+  for (let i = 0; i < 200_000; i++) fn(); // warm JIT, caches, memos
+  global.gc();
+  const before = process.memoryUsage().heapUsed;
+  for (let i = 0; i < N; i++) fn();
+  const grown = process.memoryUsage().heapUsed - before;
+  const perOp = grown / N;
+  const ok = perOp < 0.5;
+  if (!ok) failed = true;
+  console.log(`${ok ? '✔' : '✖'} ${label.padEnd(42)} ${perOp.toFixed(3)} B/op`);
+}
+
+audit('convert oklch→srgb (objects)', () => convert(oklch, OKLCH, sRGB, out));
+audit('convert oklch→srgb (strings)', () => convert(oklch, 'oklch', 'srgb', out));
+audit('convert srgb→oklch (objects)', () => convert(srgb, sRGB, OKLCH, out));
+audit('toGamut cusp', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'cusp' }, out));
+audit('toGamut css', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'css' }, out));
+audit('toGamut clip', () => toGamut(oklch, 'oklch', { gamut: 'srgb', method: 'clip' }, out));
+audit('adapt D65→A (named, bradford)', () => adapt(xyz, 'D65', 'A', out));
+
+process.exit(failed ? 1 : 0);

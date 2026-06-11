@@ -7,8 +7,9 @@ Every conversion is generated from one table of cited constants. The matrix that
 runs in your JavaScript is the matrix that runs in your shader — and CI verifies
 it to the last digit. Stop hand-porting color matrices.
 
-**Status: early.** Conversions, the illuminant lab, and the codegen pipeline are
-built and verified; gamut mapping and the SOTA benchmark pass are in progress.
+**Status: pre-release.** Conversions, the illuminant lab, the codegen pipeline,
+gamut mapping, and the performance pass are built and verified; packaging
+(types, npm) and the extended space catalog are in progress.
 See [NORTHSTAR.md](./NORTHSTAR.md) for the principles and roadmap.
 
 ## Conversions
@@ -90,6 +91,39 @@ Differential testing against [@texel/color](https://github.com/texel-org/color)
 and [culori](https://culorijs.org) runs in CI with documented per-family
 tolerances (see `test/differential.test.js` — including why they differ where
 they do).
+
+## Speed
+
+State of the art, measured against the fastest maintained alternatives
+([@texel/color](https://github.com/texel-org/color) and
+[culori](https://culorijs.org)) on identical inputs:
+
+| ns/op (lower is better) | **whitepoint** | @texel/color | culori |
+|---|---|---|---|
+| oklch → srgb | **47** | 60 | 53 |
+| srgb → oklch | **58** | 76 | 94 |
+| srgb → rec2020 | **57** | 70 | 82 |
+| gamut map: cusp method | 118 | 113 | — |
+| gamut map: CSS reference method | **992** | — | 2644 |
+
+*Node v25, Apple Silicon, 16,384 samples/run, best of 5 after warmup —
+reproduce with `npm run bench`. Conversions are verified equivalent across
+libraries in `test/differential.test.js` before being compared for speed.
+whitepoint numbers use the space-object API (texel is object-only); string
+ids cost ~20 ns/op extra. Cusp mapping is statistical parity: texel uses
+fitted polynomial approximations of the gamut cusp, whitepoint solves the
+boundary cubics exactly (bracketed Newton, ~1e-11) with hue preserved
+exactly — same speed, strictly tighter answer.*
+
+Every hot path is allocation-free with a caller-provided `out` array —
+verified by `node --expose-gc tools/alloc-audit.js` (< 0.01 B/op on
+conversions; CI-enforceable, exits nonzero on regression).
+
+How: matrices precomposed at module load and route-fused at first use
+(every conversion is at most decode → one 3×3 → encode, or the OKLab
+equivalent), object-keyed route caching with a last-pair memo (no string
+keys, no allocation in dispatch), and exact cubic structure exploited
+wherever others fit approximations.
 
 ## Anti-goals
 

@@ -25,11 +25,17 @@ function catInverse(name) {
  * Accepts: an illuminant name ('D65', 'A', …), an [x, y] chromaticity,
  * or a full [X, Y, Z] tristimulus.
  */
+const _namedWhites = new Map();
+
 function resolveWhite(w) {
   if (typeof w === 'string') {
-    const xy = illuminants[w];
-    if (!xy) throw new Error(`whitepoint: unknown illuminant "${w}" (have: ${Object.keys(illuminants).join(', ')})`);
-    return { key: w, xyz: xyToXyz(xy) };
+    let r = _namedWhites.get(w);
+    if (!r) {
+      const xy = illuminants[w];
+      if (!xy) throw new Error(`whitepoint: unknown illuminant "${w}" (have: ${Object.keys(illuminants).join(', ')})`);
+      _namedWhites.set(w, (r = { key: w, xyz: xyToXyz(xy) }));
+    }
+    return r;
   }
   if (w.length === 2) {
     return { key: `xy:${w[0]},${w[1]}`, xyz: xyToXyz(w) };
@@ -68,12 +74,27 @@ export function adaptMatrix(from, to, cat = 'bradford') {
  * @param {number[]} [out]       - optional output array
  * @param {{cat?: 'bradford'|'cat02'|'cat16'|'vonkries'|'xyz-scaling'}} [opts]
  */
+// Last-pair memo: repeated adaptation between the same pair (the common bulk
+// pattern) skips resolution and key construction entirely — zero allocation.
+let _lastFrom = null, _lastTo = null, _lastCat = null, _lastM = null;
+
 export function adapt(xyz, from, to, out = [0, 0, 0], opts) {
+  const cat = opts?.cat ?? 'bradford';
+  if (from === _lastFrom && to === _lastTo && cat === _lastCat) {
+    if (_lastM === null) {
+      out[0] = xyz[0]; out[1] = xyz[1]; out[2] = xyz[2];
+      return out;
+    }
+    return mulVec(_lastM, xyz, out);
+  }
   const src = resolveWhite(from);
   const dst = resolveWhite(to);
+  _lastFrom = from; _lastTo = to; _lastCat = cat;
   if (src.key === dst.key) {
+    _lastM = null;
     out[0] = xyz[0]; out[1] = xyz[1]; out[2] = xyz[2];
     return out;
   }
-  return mulVec(adaptMatrix(from, to, opts?.cat ?? 'bradford'), xyz, out);
+  _lastM = adaptMatrix(from, to, cat);
+  return mulVec(_lastM, xyz, out);
 }
