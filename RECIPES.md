@@ -211,6 +211,48 @@ const { r, g, b } = parse('oklch(70% 0.15 250deg)') /* culori converts */;
 // …or keep coords in whitepoint arrays from the start.
 ```
 
+## Underwater color at depth
+
+```js
+import { D65_SPD, WATER_ABSORPTION, attenuate, reflectanceToXyz, reflectanceOf }
+  from 'whitepoint/spectral';
+// daylight after 12 m of seawater (Pope & Fry 1997 absorption, Beer-Lambert)
+const light = attenuate(D65_SPD, WATER_ABSORPTION, 12);
+// what a red wetsuit looks like down there (spoiler: black)
+const xyz = reflectanceToXyz(reflectanceOf([0.8, 0.1, 0.1]), { illuminant: light });
+```
+
+## Night vision (mesopic photometry)
+
+```js
+import { photopicLuminance, scotopicLuminance, mesopic } from 'whitepoint/spectral';
+// CIE 191:2010: below 5 cd/m2 rods take over and color fades
+const Lp = photopicLuminance(spd);      // cd/m2 for absolute input
+const Ls = scotopicLuminance(spd);      // rod-weighted (V', K'm = 1700.06)
+const { m } = mesopic(Lp, Ls);          // 1 = full color, 0 = rod gray
+```
+
+## Lamp spectra: sodium, fluorescent, lines
+
+```js
+import { sodiumSPD, lineSPD, FL2_SPD, FL11_SPD, spectrumXy } from 'whitepoint/spectral';
+import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
+const lps = sodiumSPD();                      // Na D doublet (NIST), 2:1
+const neon = lineSPD([[640.2, 1], [585.2, 0.5]]);
+spectrumXy(lps, { cmf: CMF_1931_2_1NM });     // line spectra want 1 nm CMFs
+```
+
+## The sky, by wavelength (Hosek-Wilkie)
+
+```js
+import { skyModel, skySPD } from 'whitepoint/sky';
+import { spectrumXy, cctOf } from 'whitepoint/spectral';
+// exact port of the SIGGRAPH 2012 spectral sky-dome model
+const state = skyModel({ elevation: 0.5, turbidity: 3, albedo: 0.1 });
+const zenith = skySPD(state, 0, Math.PI / 2 - 0.5);  // theta, gamma from sun
+cctOf(spectrumXy(zenith));                            // a very blue number
+```
+
 ## Pitfalls worth knowing
 
 - **Lab/Luv L is 0–100; OKLab L is 0–1** — both per spec; don't mix them up.

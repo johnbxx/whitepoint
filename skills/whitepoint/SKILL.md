@@ -50,6 +50,10 @@ lchuv din99o din99o-lch` · Appearance: `cam16 cam16-ucs hct` · Classic:
 | Spectra | `import { reflectanceToXyz, planckianXy, daylightSPD } from 'whitepoint/spectral'` |
 | CVD / CCT | `simulateCVD(c, space, {type, severity?})`, `cctOf(xy) → {cct, duv}` (both in `whitepoint/spectral`) |
 | Paint mixing | `pigmentMix(a, b, t, space?)` (`whitepoint/spectral`) — Kubelka–Munk; t = pigment concentration, NOT perceptual position |
+| Photometry | `photopicLuminance(spd)`, `scotopicLuminance(spd)`, `mesopic(Lp, Ls) → {m, luminance}` (CIE 191) — all `whitepoint/spectral` |
+| Underwater / media | `attenuate(spd, WATER_ABSORPTION, meters)` — Beer–Lambert, Pope & Fry water data |
+| Lamps & lines | `sodiumSPD()`, `lineSPD([[nm, power], …])`, `FL2_SPD/FL7_SPD/FL11_SPD`; use `whitepoint/spectral-1nm` CMFs for line spectra |
+| Sky | `skyModel({elevation, turbidity, albedo})` + `skyRadiance/skySPD` (`whitepoint/sky`) — Hosek–Wilkie spectral dome, W·m⁻²·sr⁻¹·nm⁻¹ |
 | YCbCr | `makeYCbCr({matrix:'601'\|'709'\|'2020', range:'full'\|'limited'})` — both REQUIRED; no bare `'ycbcr'` exists |
 
 ## Pitfalls (these cause wrong colors)

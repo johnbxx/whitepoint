@@ -1,6 +1,6 @@
 {
   "name": "whitepoint",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Research-grade color math: every CSS color space, arbitrary illuminants, CATs, and CCT — digit-identical in JS, GLSL, and WGSL.",
   "type": "module",
   "main": "./src/index.js",
@@ -22,6 +22,10 @@
     "./spectral-1nm": {
       "types": "./spectral-1nm.d.ts",
       "import": "./src/spectral/data-1nm.js"
+    },
+    "./sky": {
+      "types": "./sky.d.ts",
+      "import": "./src/sky/index.js"
     }
   },
   "bin": {
@@ -36,14 +40,15 @@
     "spectral.d.ts",
     "spectral-1nm.d.ts",
     "NORTHSTAR.md",
-    "RECIPES.md"
+    "RECIPES.md",
+    "sky.d.ts"
   ],
   "scripts": {
     "test": "node --test",
     "precision": "node tools/precision-table.js",
     "bench": "node tools/bench.js",
     "alloc": "node --expose-gc tools/alloc-audit.js",
-    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts",
+    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts sky.d.ts spectral-1nm.d.ts",
     "site": "npx --yes esbuild docs/_entry.js --bundle --format=esm --minify --outfile=docs/whitepoint.js"
   },
   "keywords": [

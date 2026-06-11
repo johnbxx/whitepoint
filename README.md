@@ -125,6 +125,37 @@ closed), and the CIE-normative **1 nm CMFs** are an opt-in import
 (`whitepoint/spectral-1nm`) for spiky line spectra, tightening the
 Planck→illuminant-A anchor to 1.5e-4.
 
+The physics keeps going where color meets the world:
+
+```js
+import {
+  attenuate, WATER_ABSORPTION,             // Beer–Lambert; Pope & Fry 1997
+  photopicLuminance, scotopicLuminance,    // Km·∫S·V and K′m·∫S·V′
+  mesopic,                                 // CIE 191:2010 rod/cone blend
+  sodiumSPD, lineSPD,                      // emission lines (NIST D doublet)
+} from 'whitepoint/spectral';
+
+attenuate(D65_SPD, WATER_ABSORPTION, 12);  // daylight, 12 m underwater
+mesopic(0.1, 0.24);                        // moonlight: m ≈ 0.4, color fading
+```
+
+And the sky itself is an entry point — `whitepoint/sky` is an exact port of
+the Hosek–Wilkie spectral sky-dome model (SIGGRAPH 2012), coefficients
+verbatim from the authors' reference distribution, with a generator script
+(`tools/build-sky-oracle.js`) that compiles their C and pins this port to it
+digit-for-digit:
+
+```js
+import { skyModel, skySPD } from 'whitepoint/sky';
+const state = skyModel({ elevation: 0.5, turbidity: 3, albedo: 0.1 });
+skySPD(state, theta, gamma);  // absolute spectral radiance, W·m⁻²·sr⁻¹·nm⁻¹
+```
+
+All of it runs live in the [light lab](https://johnbxx.github.io/whitepoint/light.html):
+the Mona Lisa under a sodium lamp, thirty meters of seawater, noon on Pluto
+(CIE 191 mesopic — it barely dims!), a Kubelka–Munk watercolor canvas you can
+repaint with weather, and the full sky dome.
+
 ## Codegen: the same math in your shader
 
 ```js

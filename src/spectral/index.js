@@ -14,10 +14,14 @@
 import { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S } from './data.js';
 import { daylightXy } from '../lab/cct.js';
 
+import { V_PRIME_1951 } from './data-scotopic.js';
+
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
 export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
+export { WATER_ABSORPTION } from './data-water.js';
+export { V_PRIME_1951 };
 
 /** Sample a uniform-grid spectrum at wavelength λ (nm), linear interpolation. */
 export function sampleSpd(spd, lambda) {
@@ -169,6 +173,117 @@ export function cctOf(xy) {
   const p = locusUv(cct);
   const sign = Math.sign(target[1] - p[1]) || 1;
   return { cct, duv: sign * Math.sqrt(d2(cct)) };
+}
+
+// ---- Photometry: photopic, scotopic, mesopic ----
+
+// Maximum luminous efficacies. Km anchors the SI definition of the candela
+// to V(λ) (683.002 lm/W at the 555 nm peak; CIE 015); K′m = 1700.06 lm/W
+// is its scotopic counterpart, anchored so both curves agree at 555.016 nm.
+const KM = 683.002;
+const KM_PRIME = 1700.06;
+
+/**
+ * Photopic luminance of a spectral radiance distribution:
+ * Lp = Km·Σ S(λ)·V(λ)·Δλ, with V(λ) = the CMF ȳ. If S is in
+ * W·m⁻²·sr⁻¹·nm⁻¹ the result is cd/m²; relative input gives relative output.
+ */
+export function photopicLuminance(spd, { cmf = CMF_1931_2 } = {}) {
+  let L = 0;
+  for (let i = 0; i < cmf.y.length; i++) {
+    L += sampleSpd(spd, cmf.start + i * cmf.step) * cmf.y[i];
+  }
+  return KM * L * cmf.step;
+}
+
+/**
+ * Scotopic (rod-vision) luminance: Ls = K′m·Σ S(λ)·V′(λ)·Δλ, with the
+ * CIE 1951 scotopic efficiency V′(λ). Same units convention as
+ * photopicLuminance. The two agree by construction on a 555 nm line —
+ * that anchor is verified in the test suite, not assumed.
+ */
+export function scotopicLuminance(spd) {
+  let L = 0;
+  for (let i = 0; i < V_PRIME_1951.values.length; i++) {
+    L += sampleSpd(spd, V_PRIME_1951.start + i * V_PRIME_1951.step) * V_PRIME_1951.values[i];
+  }
+  return KM_PRIME * L * V_PRIME_1951.step;
+}
+
+/**
+ * CIE 191:2010 recommended system for mesopic photometry (MES2): the rod/
+ * cone blend weight m and mesopic luminance for given photopic and scotopic
+ * luminances (cd/m²). m = 1 at and above 5 cd/m² (cones only), m = 0 at and
+ * below 0.005 cd/m² (rods only); between, m solves the spec's implicit
+ * equation by its published iteration. The constants 0.7670 and 0.3334 are
+ * the spec's rounded solutions of those two endpoint conditions.
+ *
+ * @returns {{m: number, luminance: number}}
+ */
+export function mesopic(photopic, scotopic) {
+  const vp555 = sampleSpd(V_PRIME_1951, 555);
+  let m = 0.5, L = photopic;
+  for (let i = 0; i < 64; i++) {
+    L = (m * photopic + (1 - m) * scotopic * vp555) / (m + (1 - m) * vp555);
+    const next = Math.min(1, Math.max(0, 0.7670 + 0.3334 * Math.log10(L)));
+    if (Math.abs(next - m) < 1e-12) { m = next; break; }
+    m = next;
+  }
+  if (m === 1) L = photopic;
+  if (m === 0) L = scotopic;
+  return { m, luminance: L };
+}
+
+// ---- Beer–Lambert attenuation ----
+
+/**
+ * Attenuate a spectrum through an absorbing medium: Beer–Lambert
+ * S(λ)·exp(−a(λ)·d). Pair with WATER_ABSORPTION (Pope & Fry 1997, 1/m)
+ * and d in meters for underwater light; any absorption spectrum with
+ * reciprocal-length units works the same way.
+ */
+export function attenuate(spd, absorption, distance) {
+  const values = new Array(spd.values.length);
+  for (let i = 0; i < values.length; i++) {
+    const a = sampleSpd(absorption, spd.start + i * spd.step);
+    values[i] = spd.values[i] * Math.exp(-a * distance);
+  }
+  return { start: spd.start, step: spd.step, values };
+}
+
+// ---- Emission-line spectra ----
+
+/**
+ * SPD of a set of emission lines, each [λ_center nm, power], as Gaussian
+ * profiles whose integrals equal the line powers. Real discharge lines are
+ * ~0.1 nm wide; the default 2 nm FWHM is the narrowest a 1 nm grid sums
+ * exactly (discrete-integral aliasing < 2e-6 by Poisson summation, vs ~5%
+ * at 1 nm FWHM), and chromaticity is insensitive to width at this scale.
+ * Integrate against the 1 nm CMFs (whitepoint/spectral-1nm) for spiky
+ * spectra.
+ */
+export function lineSPD(lines, { start = 360, step = 1, end = 830, fwhm = 2 } = {}) {
+  const sigma = fwhm / (2 * Math.sqrt(2 * Math.LN2));
+  const amp = 1 / (sigma * Math.sqrt(2 * Math.PI));
+  const n = Math.round((end - start) / step) + 1;
+  const values = new Array(n).fill(0);
+  for (const [center, power] of lines) {
+    for (let i = 0; i < n; i++) {
+      const d = (start + i * step - center) / sigma;
+      values[i] += power * amp * Math.exp(-0.5 * d * d);
+    }
+  }
+  return { start, step, values };
+}
+
+/**
+ * Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
+ * D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
+ * intensity ratio. The canonical near-monochromatic illuminant — under it,
+ * color appearance collapses to a single hue.
+ */
+export function sodiumSPD(opts) {
+  return lineSPD([[588.9950, 2], [589.5924, 1]], opts);
 }
 
 /**

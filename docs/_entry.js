@@ -2,3 +2,4 @@
 export * from '../src/index.js';
 export * as codegen from '../src/codegen/index.js';
 export * as spectral from '../src/spectral/index.js';
+export * as sky from "../src/sky/index.js";

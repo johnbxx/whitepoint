@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — the light lab</title>
+<meta name="description" content="Physics-accurate relighting demos: the Mona Lisa under sodium light, underwater color loss, mesopic night vision, Kubelka–Munk watercolor, and the Hosek–Wilkie sky.">
+<style>
+  :root {
+    --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
+    --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, sans-serif; padding-bottom: 6rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  header { padding: 4rem 0 1rem; }
+  h1 { font-size: 2.2rem; letter-spacing: -0.02em; line-height: 1.15; }
+  h1 .wp { background: linear-gradient(90deg, #4ba3f7, #f74b8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { font-size: 1.15rem; color: var(--dim); margin-top: 0.75rem; max-width: 44rem; }
+  section { margin-top: 4rem; }
+  h2 { font-size: 1.5rem; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+  .sub { color: var(--dim); margin-bottom: 1.25rem; max-width: 46rem; }
+  .sub code, .fine code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  select, button, input[type=range] { accent-color: var(--accent); background: var(--panel); color: var(--text); border: 1px solid var(--edge); border-radius: 8px; padding: 0.45rem 0.7rem; font: inherit; font-size: 0.9rem; }
+  button { cursor: pointer; }
+  button:hover, button.on { border-color: var(--accent); }
+  button.on { color: var(--accent); }
+  label.ctl { font-family: var(--mono); font-size: 0.78rem; color: var(--dim); }
+  .readout { font-family: var(--mono); font-size: 0.8rem; color: var(--dim); }
+  .readout b { color: var(--text); font-weight: 600; }
+  canvas { border-radius: 8px; display: block; }
+  .duo { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
+  .duo figure { margin: 0; }
+  .duo figcaption { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); margin-top: 0.35rem; text-align: center; }
+  .fine { color: var(--dim); font-size: 0.82rem; margin-top: 0.9rem; max-width: 46rem; }
+  .fine a { color: var(--accent); text-decoration: none; }
+  .palette { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .paint { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--edge); cursor: pointer; }
+  .paint.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+  .swatchbar { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--edge); height: 64px; }
+  .swatchbar div { flex: 1; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 5rem; color: var(--dim); font-size: 0.85rem; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; text-decoration: none; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
+</style>
+</head>
+<body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a href="./index.html">demos</a>
+    <a class="here" href="./light.html">light lab</a>
+    <a href="./accuracy.html">accuracy</a>
+    <a href="./recipes.html">recipes</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/johnbxx/whitepoint">github</a>
+  </div>
+</div></nav>
+<main>
+<header>
+  <h1><span class="wp">the light lab</span></h1>
+  <p class="tagline">One painting, every light in the universe. Each pixel below is computed
+  from spectra — measured water absorption, real lamp physics, the CIE's own vision data —
+  by the library, right now, in your browser.</p>
+</header>
+
+<section id="relight">
+  <h2>① The Mona Lisa under a sodium lamp</h2>
+  <p class="sub">Every color in the painting gets a plausible reflectance spectrum
+  (Jakob–Hanika, Newton-solved by <code>reflectanceOf</code>), then is re-integrated under the
+  illuminant you choose — tungsten, fluorescent, candlelight, or the near-monochromatic
+  sodium doublet, under which color appearance collapses to a single hue.
+  "Eyes adjusted" applies Bradford chromatic adaptation to the new white.</p>
+  <div class="row" id="rl-presets"></div>
+  <div class="row">
+    <label class="ctl">daylight CCT <span id="rl-cctv">6504 K</span></label>
+    <input type="range" id="rl-cct" min="4000" max="25000" step="100" value="6504" style="width:220px">
+    <button id="rl-adapt">eyes adjusted: off</button>
+  </div>
+  <div class="duo">
+    <figure><canvas id="rl-canvas"></canvas><figcaption id="rl-cap">D65 gallery light</figcaption></figure>
+    <figure><canvas id="rl-orig"></canvas><figcaption>sRGB original (D65)</figcaption></figure>
+  </div>
+  <p class="fine">Honesty note: these are metamer spectra — smooth reflectances that integrate
+  to exactly the painting's sRGB colors under D65, not Leonardo's actual pigments. Under smooth
+  illuminants the difference is small; under spiky ones (F11) it is a live demonstration of
+  metamerism. Under sodium it vanishes almost entirely: with one wavelength to reflect, the
+  spectrum's shape stops mattering. Exposure is normalized — what changes is chromatic content.</p>
+</section>
+
+<section id="underwater">
+  <h2>② Thirty meters down</h2>
+  <p class="sub">Sunlight filtered through pure water using Pope &amp; Fry's integrating-cavity
+  absorption measurements (<code>WATER_ABSORPTION</code>, 1/m) and Beer–Lambert attenuation
+  (<code>attenuate</code>). Red light is effectively gone by 10&nbsp;m — watch the reds die first,
+  then orange, then yellow.</p>
+  <div class="row">
+    <label class="ctl">depth <span id="uw-depthv">0 m</span></label>
+    <input type="range" id="uw-depth" min="0" max="30" step="0.5" value="0" style="width:280px">
+    <button id="uw-adapt">eyes adjusted: off</button>
+  </div>
+  <div class="duo">
+    <figure><canvas id="uw-canvas"></canvas><figcaption id="uw-cap">surface</figcaption></figure>
+  </div>
+  <p class="fine">Model: downwelling D65 attenuated through depth d of pure water
+  (Pope &amp; Fry 1997). Real seawater adds scattering and dissolved matter; pure-water
+  absorption is the physical floor of color loss.</p>
+</section>
+
+<section id="nightfall">
+  <h2>③ Nightfall — and noon on Pluto</h2>
+  <p class="sub">Below ~5&nbsp;cd/m² your cones begin to hand over to rods, whose
+  spectral sensitivity V′(λ) peaks blue-shifted at 507&nbsp;nm and carries no color.
+  This dial applies the CIE&nbsp;191:2010 mesopic system (<code>mesopic</code>): reds darken
+  and die first (the Purkinje shift), blues hold on longest, and at starlight the
+  painting is rod-vision gray. NASA's "Pluto time": noon on Pluto is only about as
+  dim as Earth a few minutes after sunset — still nearly full color.</p>
+  <div class="row">
+    <label class="ctl">scene white luminance <span id="nf-lumv">5000 cd/m²</span></label>
+    <input type="range" id="nf-lum" min="-3.3" max="3.7" step="0.02" value="3.7" style="width:300px">
+    <span class="readout">rod/cone blend m = <b id="nf-m">1.00</b></span>
+  </div>
+  <div class="row" id="nf-presets"></div>
+  <div class="duo">
+    <figure><canvas id="nf-canvas"></canvas><figcaption id="nf-cap">photopic — full color vision</figcaption></figure>
+  </div>
+  <p class="fine">Per palette color: photopic luminance from the CMF ȳ, scotopic from
+  CIE 1951 V′(λ) (K′m = 1700.06 lm/W), blend weight m from the CIE 191 implicit equation.
+  The rod image's grays are ordered by <i>scotopic</i> luminance — blue fabric outshines
+  red lips at night, exactly as Purkinje observed in 1819. Exposure-adapted view.</p>
+</section>
+
+<section id="watercolor">
+  <h2>④ Watercolor, outdoors, in weather</h2>
+  <p class="sub">The canvas stores pigment <i>concentrations</i>, not colors. Strokes mix by
+  Kubelka–Munk (<code>K/S = (1−R)²/2R</code>, Duncan's law) — blue over yellow makes green,
+  like real paint and unlike RGB. Then the whole painting is re-integrated under the
+  weather you pick: the light changes, the paint doesn't.</p>
+  <div class="row">
+    <div class="palette" id="wc-palette"></div>
+  </div>
+  <div class="row">
+    <label class="ctl">brush <span id="wc-sizev">14</span></label>
+    <input type="range" id="wc-size" min="4" max="40" step="1" value="14" style="width:120px">
+    <label class="ctl">load <span id="wc-loadv">0.5</span></label>
+    <input type="range" id="wc-load" min="0.1" max="1.5" step="0.05" value="0.5" style="width:120px">
+    <select id="wc-weather"></select>
+    <button id="wc-clear">clear</button>
+  </div>
+  <canvas id="wc-canvas" style="width:100%; max-width:660px; touch-action:none; cursor:crosshair; border:1px solid var(--edge)"></canvas>
+  <p class="fine">Paint spectra are Jakob–Hanika reflectances of eight classic watercolor
+  hues — plausible metamers with real K-M mixing, honestly labeled (measured pigment K/S
+  curves would slot straight in). The "blue-sky shade" weather is the Hosek–Wilkie zenith
+  spectrum from section ⑤.</p>
+</section>
+
+<section id="skydome">
+  <h2>⑤ The sky, solved</h2>
+  <p class="sub">The Hosek–Wilkie spectral sky-dome model (<code>whitepoint/sky</code>) —
+  the SIGGRAPH 2012 fit to brute-force atmospheric path tracing, ported exactly,
+  coefficients verbatim. A fisheye view of the whole sky: drag the sun down and watch
+  the dome warm; raise the turbidity and watch the blue wash out.</p>
+  <div class="row">
+    <label class="ctl">sun elevation <span id="sk-elevv">30°</span></label>
+    <input type="range" id="sk-elev" min="1" max="90" step="1" value="30" style="width:160px">
+    <label class="ctl">turbidity <span id="sk-turbv">3</span></label>
+    <input type="range" id="sk-turb" min="1" max="10" step="0.1" value="3" style="width:140px">
+    <label class="ctl">albedo <span id="sk-albv">0.1</span></label>
+    <input type="range" id="sk-alb" min="0" max="1" step="0.05" value="0.1" style="width:120px">
+  </div>
+  <div class="duo">
+    <figure><canvas id="sk-canvas" width="288" height="288"></canvas><figcaption>equidistant fisheye, sun at left</figcaption></figure>
+    <figure>
+      <div class="readout" style="max-width: 260px">
+        zenith CCT <b id="sk-zcct">—</b><br>
+        horizon CCT <b id="sk-hcct">—</b><br><br>
+        <span id="sk-note">Absolute spectral radiance, W·m⁻²·sr⁻¹·nm⁻¹, auto-exposed
+        for display. Verified against the authors' reference implementation.</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<section id="alien">
+  <h2>⑥ Sunlight on other worlds</h2>
+  <p class="sub">The same sun, filtered through different air. Direct sunlight as a
+  5772&nbsp;K Planckian (<code>planckianSPD</code> — Planck's law, no fit) through a
+  parameterized Beer–Lambert atmosphere: Rayleigh ∝ λ⁻⁴ plus a blue-absorbing dust term.</p>
+  <div class="row" id="al-presets"></div>
+  <div class="row">
+    <label class="ctl">Rayleigh τ <span id="al-rayv">0.1</span></label>
+    <input type="range" id="al-ray" min="0" max="4" step="0.05" value="0.1" style="width:180px">
+    <label class="ctl">dust δ <span id="al-dustv">0</span></label>
+    <input type="range" id="al-dust" min="0" max="3" step="0.05" value="0" style="width:180px">
+  </div>
+  <div class="swatchbar" id="al-bar"></div>
+  <div class="row" style="margin-top: 0.6rem">
+    <span class="readout">transmitted light CCT <b id="al-cct">—</b> · Duv <b id="al-duv">—</b></span>
+  </div>
+  <p class="fine">Honesty note: this is parameterized extinction, not radiative transfer —
+  it shows <i>why</i> Mars light is butterscotch and Venus light is dim orange, with real
+  spectra and real integration, but the τ/δ values are illustrative. The Earth dome in
+  section ⑤ is the rigorously fitted model; an equivalent fit for other atmospheres
+  would slot into the same API. Pluto needs no atmosphere model at all — see section ③.</p>
+</section>
+
+<footer>
+  <p>Mona Lisa: Leonardo da Vinci, via Wikimedia Commons (public domain, C2RMF scan).
+  Water: Pope &amp; Fry (1997). Scotopic V′: CIE 1951 via CVRL. Mesopic: CIE 191:2010.
+  Sky: Hosek &amp; Wilkie (2012), 3-clause BSD. Sodium D-lines: NIST ASD.
+  Everything integrates through <a href="https://www.npmjs.com/package/whitepoint">whitepoint</a>.</p>
+</footer>
+</main>
+
+<script>
+window.__lightlab = { errs: [], stage: 'parsing' };
+window.addEventListener('error', (e) => __lightlab.errs.push(`${e.message} @${e.filename}:${e.lineno}`));
+window.addEventListener('unhandledrejection', (e) => __lightlab.errs.push(`rejection: ${e.reason && e.reason.message || e.reason}`));
+</script>
+<script type="module">
+import * as wp from './whitepoint.js';
+window.__lightlab.stage = 'module-start';
+const { convert, adapt, spectral, sky } = wp;
+const $ = (id) => document.getElementById(id);
+const clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
+const byte = (v) => Math.round(clamp01(v) * 255);
+
+// ---------- the relight engine: image → palette → spectra → LUT ----------
+const QBITS = 4, QLEV = 1 << QBITS, QMAX = QLEV * QLEV * QLEV;
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error(`image failed to load: ${src}`));
+    img.src = src;
+  });
+}
+
+async function buildRelighter(canvasId, imgSrc, maxW) {
+  // img.decode() can defer forever on never-rasterized pages; the load
+  // event + drawImage is the robust path
+  const img = await loadImage(imgSrc);
+  const W = Math.min(maxW, img.naturalWidth);
+  const H = Math.round(img.naturalHeight * (W / img.naturalWidth));
+  const off = new OffscreenCanvas(W, H);
+  const octx = off.getContext('2d', { willReadFrequently: true });
+  octx.drawImage(img, 0, 0, W, H);
+  const src = octx.getImageData(0, 0, W, H);
+
+  // quantize to QBITS/channel buckets, keep per-bucket centroids
+  const keys = new Uint16Array(W * H);
+  const count = new Float64Array(QMAX);
+  const sums = new Float64Array(QMAX * 3);
+  const d = src.data;
+  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+    const k = ((d[i] >> (8 - QBITS)) << (2 * QBITS)) | ((d[i + 1] >> (8 - QBITS)) << QBITS) | (d[i + 2] >> (8 - QBITS));
+    keys[p] = k;
+    count[k]++;
+    sums[k * 3] += d[i]; sums[k * 3 + 1] += d[i + 1]; sums[k * 3 + 2] += d[i + 2];
+  }
+  const palette = [];
+  for (let k = 0; k < QMAX; k++) {
+    if (!count[k]) continue;
+    const srgb = [sums[k * 3] / count[k] / 255, sums[k * 3 + 1] / count[k] / 255, sums[k * 3 + 2] / count[k] / 255];
+    palette.push({ key: k, srgb, refl: spectral.reflectanceOf(srgb) });
+  }
+
+  const canvas = $(canvasId);
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = `${Math.round(W * 0.85)}px`;
+  const ctx = canvas.getContext('2d');
+  const out = ctx.createImageData(W, H);
+  const o = out.data;
+  for (let i = 3; i < o.length; i += 4) o[i] = 255;
+  const lut = new Uint8ClampedArray(QMAX * 3);
+
+  return {
+    palette, W, H,
+    /** fn(entry) → [r,g,b] 0–1; repaints through the palette LUT */
+    transform(fn) {
+      for (const e of palette) {
+        const rgb = fn(e);
+        lut[e.key * 3] = byte(rgb[0]); lut[e.key * 3 + 1] = byte(rgb[1]); lut[e.key * 3 + 2] = byte(rgb[2]);
+      }
+      for (let p = 0, i = 0; p < keys.length; p++, i += 4) {
+        const k3 = keys[p] * 3;
+        o[i] = lut[k3]; o[i + 1] = lut[k3 + 1]; o[i + 2] = lut[k3 + 2];
+      }
+      ctx.putImageData(out, 0, 0);
+    },
+  };
+}
+
+const IMG = './assets/mona-lisa.jpg';
+const TMP = [0, 0, 0];
+
+// ---------- ① relight ----------
+{
+  const rl = await buildRelighter('rl-canvas', IMG, 300);
+  // original, for reference
+  const orig = $('rl-orig');
+  const im2 = await loadImage(IMG);
+  orig.width = rl.W; orig.height = rl.H;
+  orig.style.width = `${Math.round(rl.W * 0.55)}px`;
+  orig.getContext('2d').drawImage(im2, 0, 0, rl.W, rl.H);
+
+  const PRESETS = [
+    ['D65 gallery', () => spectral.D65_SPD],
+    ['tungsten (A)', () => spectral.illuminantASPD()],
+    ['candle 1850 K', () => spectral.planckianSPD(1850)],
+    ['fluorescent F2', () => spectral.FL2_SPD],
+    ['tri-band F11', () => spectral.FL11_SPD],
+    ['sodium lamp', () => spectral.sodiumSPD()],
+  ];
+  let spd = spectral.D65_SPD, label = 'D65 gallery light', adaptOn = false;
+
+  const render = () => {
+    const w = spectral.emissionToXyz(spd, undefined, TMP);
+    const white = [w[0] / w[1], 1, w[2] / w[1]];
+    rl.transform((e) => {
+      const xyz = spectral.reflectanceToXyz(e.refl, { illuminant: spd });
+      return convert(adaptOn ? adapt(xyz, white, 'D65') : xyz, 'xyz-d65', 'srgb');
+    });
+    $('rl-cap').textContent = label + (adaptOn ? ' · adapted' : '');
+  };
+
+  const row = $('rl-presets');
+  for (const [name, make] of PRESETS) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.onclick = () => { spd = make(); label = name; render(); };
+    row.appendChild(b);
+  }
+  $('rl-cct').oninput = (ev) => {
+    const T = +ev.target.value;
+    $('rl-cctv').textContent = `${T} K`;
+    spd = spectral.daylightSPD(T); label = `daylight ${T} K`;
+    render();
+  };
+  $('rl-adapt').onclick = (ev) => {
+    adaptOn = !adaptOn;
+    ev.target.textContent = `eyes adjusted: ${adaptOn ? 'on' : 'off'}`;
+    ev.target.classList.toggle('on', adaptOn);
+    render();
+  };
+  render();
+}
+
+// ---------- ② underwater ----------
+{
+  const uw = await buildRelighter('uw-canvas', IMG, 300);
+  let depth = 0, adaptOn = false;
+  const render = () => {
+    const spd = spectral.attenuate(spectral.D65_SPD, spectral.WATER_ABSORPTION, depth);
+    const w = spectral.emissionToXyz(spd, undefined, TMP);
+    const white = [w[0] / w[1], 1, w[2] / w[1]];
+    uw.transform((e) => {
+      const xyz = spectral.reflectanceToXyz(e.refl, { illuminant: spd });
+      return convert(adaptOn ? adapt(xyz, white, 'D65') : xyz, 'xyz-d65', 'srgb');
+    });
+    $('uw-cap').textContent = depth === 0 ? 'surface' : `${depth} m down${adaptOn ? ' · adapted' : ''}`;
+  };
+  $('uw-depth').oninput = (ev) => {
+    depth = +ev.target.value;
+    $('uw-depthv').textContent = `${depth} m`;
+    render();
+  };
+  $('uw-adapt').onclick = (ev) => {
+    adaptOn = !adaptOn;
+    ev.target.textContent = `eyes adjusted: ${adaptOn ? 'on' : 'off'}`;
+    ev.target.classList.toggle('on', adaptOn);
+    render();
+  };
+  render();
+}
+
+// ---------- ③ nightfall ----------
+{
+  const nf = await buildRelighter('nf-canvas', IMG, 300);
+  // per-entry: photopic XYZ under D65 and the scotopic/photopic ratio of
+  // the reflected light
+  const d65white = (() => { const w = spectral.emissionToXyz(spectral.D65_SPD); return [w[0] / w[1], 1, w[2] / w[1]]; })();
+  const spD65 = spectral.scotopicLuminance(spectral.D65_SPD) / spectral.photopicLuminance(spectral.D65_SPD);
+  for (const e of nf.palette) {
+    e.xyz = spectral.reflectanceToXyz(e.refl);
+    const lit = {
+      start: e.refl.start, step: e.refl.step,
+      values: e.refl.values.map((r, i) => r * spectral.sampleSpd(spectral.D65_SPD, e.refl.start + i * e.refl.step)),
+    };
+    e.sp = spectral.scotopicLuminance(lit) / spectral.photopicLuminance(lit);
+  }
+
+  const render = (logL) => {
+    const Lw = Math.pow(10, logL);
+    $('nf-lumv').textContent = Lw >= 100 ? `${Math.round(Lw)} cd/m²` : `${Lw.toPrecision(2)} cd/m²`;
+    const mWhite = spectral.mesopic(Lw, Lw * spD65).m;
+    nf.transform((e) => {
+      const Lp = e.xyz[1] * Lw;
+      const { m } = spectral.mesopic(Lp, Lp * e.sp);
+      // rod image: achromatic, ordered by scotopic luminance (Purkinje)
+      const Ysc = e.xyz[1] * e.sp / spD65;
+      const r = TMP;
+      r[0] = m * e.xyz[0] + (1 - m) * d65white[0] * Ysc;
+      r[1] = m * e.xyz[1] + (1 - m) * Ysc;
+      r[2] = m * e.xyz[2] + (1 - m) * d65white[2] * Ysc;
+      return convert(r, 'xyz-d65', 'srgb');
+    });
+    $('nf-m').textContent = mWhite.toFixed(2);
+    $('nf-cap').textContent = mWhite >= 1 ? 'photopic — full color vision'
+      : mWhite <= 0 ? 'scotopic — rods only, Purkinje grays'
+      : `mesopic — cones fading (m = ${mWhite.toFixed(2)})`;
+  };
+
+  const PRESETS = [
+    ['Earth noon', 3.7], ['overcast', 3.0], ['Pluto noon', 0.7],
+    ['twilight', -0.3], ['full moon', -1.3], ['starlight', -3.3],
+  ];
+  const row = $('nf-presets');
+  for (const [name, v] of PRESETS) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.onclick = () => { $('nf-lum').value = v; render(v); };
+    row.appendChild(b);
+  }
+  $('nf-lum').oninput = (ev) => render(+ev.target.value);
+  render(3.7);
+}
+
+// ---------- ④ watercolor ----------
+{
+  // working spectral grid: 380–700 at 10 nm
+  const GN = 33, G0 = 380, GS = 10;
+  const onGrid = (spd) => Float64Array.from({ length: GN }, (_, i) => spectral.sampleSpd(spd, G0 + i * GS));
+  const cmf = spectral.CMF_1931_2;
+  const gx = onGrid({ start: cmf.start, step: cmf.step, values: cmf.x });
+  const gy = onGrid({ start: cmf.start, step: cmf.step, values: cmf.y });
+  const gz = onGrid({ start: cmf.start, step: cmf.step, values: cmf.z });
+
+  const PAINTS = [
+    ['cadmium yellow', [0.99, 0.84, 0.10]],
+    ['yellow ochre', [0.80, 0.62, 0.26]],
+    ['cadmium red', [0.89, 0.18, 0.13]],
+    ['alizarin crimson', [0.65, 0.09, 0.20]],
+    ['burnt sienna', [0.55, 0.27, 0.15]],
+    ['viridian', [0.10, 0.51, 0.38]],
+    ['phthalo blue', [0.05, 0.27, 0.63]],
+    ['ultramarine', [0.18, 0.16, 0.61]],
+  ].map(([name, srgb]) => {
+    const R = onGrid(spectral.reflectanceOf(srgb));
+    const ks = Float64Array.from(R, (r) => {
+      const rc = Math.min(0.99, Math.max(0.01, r));
+      return (1 - rc) * (1 - rc) / (2 * rc);
+    });
+    return { name, srgb, ks };
+  });
+
+  const WEATHER = [
+    ['noon sun (5500 K)', () => spectral.daylightSPD(5500)],
+    ['overcast (D65)', () => spectral.D65_SPD],
+    ['golden hour (3000 K)', () => spectral.planckianSPD(3000)],
+    ['blue-sky shade (Hosek zenith)', () => sky.skySPD(sky.skyModel({ elevation: 0.6, turbidity: 2 }), 0, Math.PI / 2 - 0.6)],
+    ['sodium streetlight', () => spectral.sodiumSPD()],
+  ];
+
+  const W = 220, H = 150, SCALE = 3;
+  const canvas = $('wc-canvas');
+  canvas.width = W * SCALE; canvas.height = H * SCALE;
+  const ctx = canvas.getContext('2d');
+  const small = new OffscreenCanvas(W, H);
+  const sctx = small.getContext('2d');
+  const img = sctx.createImageData(W, H);
+  for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+  const conc = PAINTS.map(() => new Float32Array(W * H));
+
+  let SX, SY, SZ; // illuminant × CMF × Δλ / k, premultiplied
+  function setWeather(make) {
+    const g = onGrid(make());
+    let k = 0;
+    for (let i = 0; i < GN; i++) k += g[i] * gy[i];
+    SX = Float64Array.from(gx, (v, i) => g[i] * v / k);
+    SY = Float64Array.from(gy, (v, i) => g[i] * v / k);
+    SZ = Float64Array.from(gz, (v, i) => g[i] * v / k);
+  }
+
+  function renderRect(x0, y0, x1, y1) {
+    const xyz = TMP;
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const p = y * W + x;
+        let X = 0, Y = 0, Z = 0;
+        for (let l = 0; l < GN; l++) {
+          let ks = 0;
+          for (let i = 0; i < PAINTS.length; i++) ks += conc[i][p] * PAINTS[i].ks[l];
+          const R = 1 + ks - Math.sqrt(ks * ks + 2 * ks);
+          X += R * SX[l]; Y += R * SY[l]; Z += R * SZ[l];
+        }
+        xyz[0] = X; xyz[1] = Y; xyz[2] = Z;
+        const rgb = convert(xyz, 'xyz-d65', 'srgb');
+        const i4 = p * 4;
+        img.data[i4] = byte(rgb[0]); img.data[i4 + 1] = byte(rgb[1]); img.data[i4 + 2] = byte(rgb[2]);
+      }
+    }
+    sctx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
+  }
+  const renderAll = () => renderRect(0, 0, W, H);
+
+  // palette UI
+  let active = 6;
+  const pal = $('wc-palette');
+  PAINTS.forEach((p, i) => {
+    const b = document.createElement('div');
+    b.className = 'paint' + (i === active ? ' on' : '');
+    b.title = p.name;
+    b.style.background = `rgb(${byte(p.srgb[0])},${byte(p.srgb[1])},${byte(p.srgb[2])})`;
+    b.onclick = () => {
+      active = i;
+      [...pal.children].forEach((c, j) => c.classList.toggle('on', j === i));
+    };
+    pal.appendChild(b);
+  });
+  const sel = $('wc-weather');
+  WEATHER.forEach(([name], i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = name;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => { setWeather(WEATHER[sel.value][1]); renderAll(); };
+  $('wc-size').oninput = (ev) => $('wc-sizev').textContent = ev.target.value;
+  $('wc-load').oninput = (ev) => $('wc-loadv').textContent = ev.target.value;
+  $('wc-clear').onclick = () => { conc.forEach((c) => c.fill(0)); renderAll(); };
+
+  // painting
+  let painting = false;
+  function splat(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) / rect.width * W;
+    const y = (ev.clientY - rect.top) / rect.height * H;
+    const r = +$('wc-size').value / SCALE;
+    const amount = +$('wc-load').value;
+    const c = conc[active];
+    const x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(W, Math.ceil(x + r));
+    const y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H, Math.ceil(y + r));
+    for (let py = y0; py < y1; py++) {
+      for (let px = x0; px < x1; px++) {
+        const dx = px - x, dy = py - y;
+        const t = Math.sqrt(dx * dx + dy * dy) / r;
+        if (t < 1) c[py * W + px] += amount * (1 - t) * (1 - t) * 0.25;
+      }
+    }
+    renderRect(x0, y0, x1, y1);
+  }
+  canvas.addEventListener('pointerdown', (ev) => { painting = true; canvas.setPointerCapture(ev.pointerId); splat(ev); });
+  canvas.addEventListener('pointermove', (ev) => { if (painting) splat(ev); });
+  canvas.addEventListener('pointerup', () => { painting = false; });
+
+  setWeather(WEATHER[0][1]);
+  // a starter wash so the demo isn't blank: sky + hill + sun
+  for (let y = 0; y < 60; y++) for (let x = 0; x < W; x++) conc[6][y * W + x] = 0.35 * (1 - y / 70);
+  for (let y = 90; y < H; y++) for (let x = 0; x < W; x++) {
+    conc[0][y * W + x] = 0.25; conc[6][y * W + x] = 0.3; // yellow + blue = K-M green
+  }
+  renderAll();
+}
+
+// ---------- ⑤ sky dome ----------
+{
+  const N = 96, OUT = 288;
+  const small = new OffscreenCanvas(N, N);
+  const sctx = small.getContext('2d');
+  const img = sctx.createImageData(N, N);
+  const canvas = $('sk-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function render() {
+    const elev = +$('sk-elev').value * Math.PI / 180;
+    const turb = +$('sk-turb').value;
+    const alb = +$('sk-alb').value;
+    $('sk-elevv').textContent = `${$('sk-elev').value}°`;
+    $('sk-turbv').textContent = turb;
+    $('sk-albv').textContent = alb;
+    const state = sky.skyModel({ elevation: elev, turbidity: turb, albedo: alb });
+    const sunTheta = Math.PI / 2 - elev;
+
+    // integrate per pixel on a 20 nm grid, collect XYZ; auto-expose after
+    const xyzs = new Float64Array(N * N * 3);
+    let maxY = 0;
+    for (let py = 0; py < N; py++) {
+      for (let px = 0; px < N; px++) {
+        const dx = (px + 0.5) / N * 2 - 1, dy = (py + 0.5) / N * 2 - 1;
+        const rr = Math.sqrt(dx * dx + dy * dy);
+        const p3 = (py * N + px) * 3;
+        if (rr > 1) { xyzs[p3] = -1; continue; }
+        const theta = rr * Math.PI / 2;
+        const phi = Math.atan2(dy, -dx); // sun toward -x (left)
+        const cosG = Math.cos(sunTheta) * Math.cos(theta) + Math.sin(sunTheta) * Math.sin(theta) * Math.cos(phi);
+        const gamma = Math.acos(Math.min(1, Math.max(-1, cosG)));
+        const spd = sky.skySPD(state, Math.min(theta, Math.PI / 2 - 1e-3), gamma, { step: 20 });
+        const xyz = spectral.emissionToXyz(spd, undefined, TMP);
+        xyzs[p3] = xyz[0]; xyzs[p3 + 1] = xyz[1]; xyzs[p3 + 2] = xyz[2];
+        if (xyz[1] > maxY) maxY = xyz[1];
+      }
+    }
+    const exposure = 1 / (maxY * 0.18); // sun region saturates, dome reads well
+    const c = TMP;
+    for (let p = 0; p < N * N; p++) {
+      const p3 = p * 3, i4 = p * 4;
+      if (xyzs[p3] < 0) { img.data[i4 + 3] = 0; continue; }
+      c[0] = xyzs[p3] * exposure; c[1] = xyzs[p3 + 1] * exposure; c[2] = xyzs[p3 + 2] * exposure;
+      const rgb = convert(c, 'xyz-d65', 'srgb');
+      img.data[i4] = byte(rgb[0]); img.data[i4 + 1] = byte(rgb[1]); img.data[i4 + 2] = byte(rgb[2]);
+      img.data[i4 + 3] = 255;
+    }
+    sctx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, OUT, OUT);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(small, 0, 0, OUT, OUT);
+
+    const cctLabel = (xy) => {
+      const cct = spectral.cctOf(xy).cct;
+      return cct >= 24900 ? '> 25000 K' : `${Math.round(cct)} K`; // solver bracket tops out at 25 000
+    };
+    $('sk-zcct').textContent = cctLabel(spectral.spectrumXy(sky.skySPD(state, 0, sunTheta)));
+    $('sk-hcct').textContent = cctLabel(spectral.spectrumXy(sky.skySPD(state, 87 * Math.PI / 180, Math.PI / 2)));
+  }
+  for (const id of ['sk-elev', 'sk-turb', 'sk-alb']) $(id).oninput = render;
+  render();
+}
+
+// ---------- ⑥ alien sunlight ----------
+{
+  const SUN = spectral.planckianSPD(5772);
+  const strip = $('al-bar');
+  const cells = [];
+  for (let i = 0; i < 24; i++) {
+    const div = document.createElement('div');
+    strip.appendChild(div);
+    cells.push(div);
+  }
+
+  function transmitted(tau, dust, scale = 1) {
+    const { start, step, values } = SUN;
+    const out = new Array(values.length);
+    for (let i = 0; i < values.length; i++) {
+      const l = start + i * step;
+      const ray = tau * Math.pow(550 / l, 4);
+      const db = dust * Math.max(0, (620 - l) / 250);
+      out[i] = values[i] * Math.exp(-(ray + db) * scale);
+    }
+    return { start, step, values: out };
+  }
+
+  function render() {
+    const tau = +$('al-ray').value, dust = +$('al-dust').value;
+    $('al-rayv').textContent = tau; $('al-dustv').textContent = dust;
+    // strip: airmass sweep 0→3 (overhead sun → near horizon)
+    cells.forEach((cell, i) => {
+      const spd = transmitted(tau, dust, (i / (cells.length - 1)) * 3 + 0.2);
+      const w = spectral.emissionToXyz(spd, undefined, TMP);
+      const xyz = [w[0] / w[1], 1, w[2] / w[1]];
+      const rgb = convert(xyz, 'xyz-d65', 'srgb').map(clamp01);
+      const mx = Math.max(...rgb, 1e-6);
+      cell.style.background = `rgb(${byte(rgb[0] / mx)},${byte(rgb[1] / mx)},${byte(rgb[2] / mx)})`;
+    });
+    const mid = transmitted(tau, dust, 1);
+    const { cct, duv } = spectral.cctOf(spectral.spectrumXy(mid));
+    $('al-cct').textContent = `${Math.round(cct)} K`;
+    $('al-duv').textContent = duv.toFixed(4);
+  }
+
+  const PRESETS = [
+    ['space (no air)', 0, 0],
+    ['Earth, clear', 0.1, 0],
+    ['Earth, sunset airmass', 0.9, 0.1],
+    ['Mars, dusty', 0.05, 1.1],
+    ['Venus, thick haze', 1.6, 1.8],
+  ];
+  const row = $('al-presets');
+  for (const [name, t, du] of PRESETS) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.onclick = () => { $('al-ray').value = t; $('al-dust').value = du; render(); };
+    row.appendChild(b);
+  }
+  $('al-ray').oninput = render;
+  $('al-dust').oninput = render;
+  render();
+}
+window.__lightlab.stage = 'done';
+</script>
+</body>
+</html>
