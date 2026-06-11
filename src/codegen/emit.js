@@ -10,9 +10,16 @@
 // precision, not by the constants. Declare `precision highp float;` in GLSL.
 
 import { mul } from '../core/mat3.js';
+import { A98_GAMMA, PROPHOTO_ET, REC2020_ALPHA, REC2020_BETA } from '../constants/transfer.js';
 
 const DEG2RAD = '0.017453292519943295';
 const RAD2DEG = '57.29577951308232';
+
+// Every derived constant in the helper bodies is computed here, from the same
+// exports the JS engine uses — never retyped (north star principle #2).
+const LAB_EPSILON = 216 / 24389;
+const LAB_KAPPA = 24389 / 27;
+const LAB_CBRT_EPSILON = 6 / 29;
 
 /** Shortest round-trip decimal; guaranteed to parse as a float literal. */
 function fmt(n, lang) {
@@ -35,47 +42,64 @@ export function fuseOps(ops) {
   return out;
 }
 
-// ---- helper function bodies per language, keyed by helper id ----
+// ---- helper function bodies per language ----
+//
+// Built lazily per language with every constant interpolated from the live
+// float64 values above. The original draft hand-typed α−1 for Rec.2020 and
+// got the last digit wrong — the exact failure mode this library exists to
+// prevent. Now α−1 is computed, like everything else.
+
+function buildHelpers(lang) {
+  const f = (n) => fmt(n, lang);
+  const THIRD = f(1 / 3);
+  if (lang === 'js') {
+    return {
+      srgb_decode: `const wp_srgb_decode = (v) => { const a = Math.abs(v); const m = a <= 0.04045 ? a / 12.92 : Math.pow((a + 0.055) / 1.055, 2.4); return v < 0 ? -m : m; };`,
+      srgb_encode: `const wp_srgb_encode = (v) => { const a = Math.abs(v); const m = a <= 0.0031308 ? 12.92 * a : 1.055 * Math.pow(a, ${f(1 / 2.4)}) - 0.055; return v < 0 ? -m : m; };`,
+      a98_decode: `const wp_a98_decode = (v) => { const m = Math.pow(Math.abs(v), ${f(A98_GAMMA)}); return v < 0 ? -m : m; };`,
+      a98_encode: `const wp_a98_encode = (v) => { const m = Math.pow(Math.abs(v), ${f(1 / A98_GAMMA)}); return v < 0 ? -m : m; };`,
+      prophoto_decode: `const wp_prophoto_decode = (v) => { const a = Math.abs(v); const m = a <= ${f(16 * PROPHOTO_ET)} ? a / 16 : Math.pow(a, 1.8); return v < 0 ? -m : m; };`,
+      prophoto_encode: `const wp_prophoto_encode = (v) => { const a = Math.abs(v); const m = a >= ${f(PROPHOTO_ET)} ? Math.pow(a, ${f(1 / 1.8)}) : 16 * a; return v < 0 ? -m : m; };`,
+      rec2020_decode: `const wp_rec2020_decode = (v) => { const a = Math.abs(v); const m = a < ${f(REC2020_BETA * 4.5)} ? a / 4.5 : Math.pow((a + ${f(REC2020_ALPHA - 1)}) / ${f(REC2020_ALPHA)}, ${f(1 / 0.45)}); return v < 0 ? -m : m; };`,
+      rec2020_encode: `const wp_rec2020_encode = (v) => { const a = Math.abs(v); const m = a < ${f(REC2020_BETA)} ? 4.5 * a : ${f(REC2020_ALPHA)} * Math.pow(a, 0.45) - ${f(REC2020_ALPHA - 1)}; return v < 0 ? -m : m; };`,
+      labF: `const wp_labF = (t) => t > ${f(LAB_EPSILON)} ? Math.cbrt(t) : (t * ${f(LAB_KAPPA)} + 16) / 116;`,
+      labFInv: `const wp_labFInv = (t) => t > ${f(LAB_CBRT_EPSILON)} ? t * t * t : (116 * t - 16) / ${f(LAB_KAPPA)};`,
+    };
+  }
+  if (lang === 'glsl') {
+    return {
+      srgb_decode: `float wp_srgb_decode(float v) { float a = abs(v); float m = a <= 0.04045 ? a / 12.92 : pow((a + 0.055) / 1.055, 2.4); return v < 0.0 ? -m : m; }`,
+      srgb_encode: `float wp_srgb_encode(float v) { float a = abs(v); float m = a <= 0.0031308 ? 12.92 * a : 1.055 * pow(a, ${f(1 / 2.4)}) - 0.055; return v < 0.0 ? -m : m; }`,
+      a98_decode: `float wp_a98_decode(float v) { float m = pow(abs(v), ${f(A98_GAMMA)}); return v < 0.0 ? -m : m; }`,
+      a98_encode: `float wp_a98_encode(float v) { float m = pow(abs(v), ${f(1 / A98_GAMMA)}); return v < 0.0 ? -m : m; }`,
+      prophoto_decode: `float wp_prophoto_decode(float v) { float a = abs(v); float m = a <= ${f(16 * PROPHOTO_ET)} ? a / 16.0 : pow(a, 1.8); return v < 0.0 ? -m : m; }`,
+      prophoto_encode: `float wp_prophoto_encode(float v) { float a = abs(v); float m = a >= ${f(PROPHOTO_ET)} ? pow(a, ${f(1 / 1.8)}) : 16.0 * a; return v < 0.0 ? -m : m; }`,
+      rec2020_decode: `float wp_rec2020_decode(float v) { float a = abs(v); float m = a < ${f(REC2020_BETA * 4.5)} ? a / 4.5 : pow((a + ${f(REC2020_ALPHA - 1)}) / ${f(REC2020_ALPHA)}, ${f(1 / 0.45)}); return v < 0.0 ? -m : m; }`,
+      rec2020_encode: `float wp_rec2020_encode(float v) { float a = abs(v); float m = a < ${f(REC2020_BETA)} ? 4.5 * a : ${f(REC2020_ALPHA)} * pow(a, 0.45) - ${f(REC2020_ALPHA - 1)}; return v < 0.0 ? -m : m; }`,
+      labF: `float wp_labF(float t) { return t > ${f(LAB_EPSILON)} ? pow(t, ${THIRD}) : (t * ${f(LAB_KAPPA)} + 16.0) / 116.0; }`,
+      labFInv: `float wp_labFInv(float t) { return t > ${f(LAB_CBRT_EPSILON)} ? t * t * t : (116.0 * t - 16.0) / ${f(LAB_KAPPA)}; }`,
+      cbrt: `float wp_cbrt(float v) { return sign(v) * pow(abs(v), ${THIRD}); }`,
+    };
+  }
+  return {
+    srgb_decode: `fn wp_srgb_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow((a + 0.055) / 1.055, 2.4), a / 12.92, a <= 0.04045); return select(m, -m, v < 0.0); }`,
+    srgb_encode: `fn wp_srgb_encode(v: f32) -> f32 { let a = abs(v); let m = select(1.055 * pow(a, ${f(1 / 2.4)}) - 0.055, 12.92 * a, a <= 0.0031308); return select(m, -m, v < 0.0); }`,
+    a98_decode: `fn wp_a98_decode(v: f32) -> f32 { let m = pow(abs(v), ${f(A98_GAMMA)}); return select(m, -m, v < 0.0); }`,
+    a98_encode: `fn wp_a98_encode(v: f32) -> f32 { let m = pow(abs(v), ${f(1 / A98_GAMMA)}); return select(m, -m, v < 0.0); }`,
+    prophoto_decode: `fn wp_prophoto_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow(a, 1.8), a / 16.0, a <= ${f(16 * PROPHOTO_ET)}); return select(m, -m, v < 0.0); }`,
+    prophoto_encode: `fn wp_prophoto_encode(v: f32) -> f32 { let a = abs(v); let m = select(16.0 * a, pow(a, ${f(1 / 1.8)}), a >= ${f(PROPHOTO_ET)}); return select(m, -m, v < 0.0); }`,
+    rec2020_decode: `fn wp_rec2020_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow((a + ${f(REC2020_ALPHA - 1)}) / ${f(REC2020_ALPHA)}, ${f(1 / 0.45)}), a / 4.5, a < ${f(REC2020_BETA * 4.5)}); return select(m, -m, v < 0.0); }`,
+    rec2020_encode: `fn wp_rec2020_encode(v: f32) -> f32 { let a = abs(v); let m = select(${f(REC2020_ALPHA)} * pow(a, 0.45) - ${f(REC2020_ALPHA - 1)}, 4.5 * a, a < ${f(REC2020_BETA)}); return select(m, -m, v < 0.0); }`,
+    labF: `fn wp_labF(t: f32) -> f32 { return select((t * ${f(LAB_KAPPA)} + 16.0) / 116.0, pow(t, ${THIRD}), t > ${f(LAB_EPSILON)}); }`,
+    labFInv: `fn wp_labFInv(t: f32) -> f32 { return select((116.0 * t - 16.0) / ${f(LAB_KAPPA)}, t * t * t, t > ${f(LAB_CBRT_EPSILON)}); }`,
+    cbrt: `fn wp_cbrt(v: f32) -> f32 { return sign(v) * pow(abs(v), ${THIRD}); }`,
+  };
+}
 
 const HELPERS = {
-  js: {
-    srgb_decode: `const wp_srgb_decode = (v) => { const a = Math.abs(v); const m = a <= 0.04045 ? a / 12.92 : Math.pow((a + 0.055) / 1.055, 2.4); return v < 0 ? -m : m; };`,
-    srgb_encode: `const wp_srgb_encode = (v) => { const a = Math.abs(v); const m = a <= 0.0031308 ? 12.92 * a : 1.055 * Math.pow(a, 1 / 2.4) - 0.055; return v < 0 ? -m : m; };`,
-    a98_decode: `const wp_a98_decode = (v) => { const m = Math.pow(Math.abs(v), 563 / 256); return v < 0 ? -m : m; };`,
-    a98_encode: `const wp_a98_encode = (v) => { const m = Math.pow(Math.abs(v), 256 / 563); return v < 0 ? -m : m; };`,
-    prophoto_decode: `const wp_prophoto_decode = (v) => { const a = Math.abs(v); const m = a <= 0.03125 ? a / 16 : Math.pow(a, 1.8); return v < 0 ? -m : m; };`,
-    prophoto_encode: `const wp_prophoto_encode = (v) => { const a = Math.abs(v); const m = a >= 0.001953125 ? Math.pow(a, 1 / 1.8) : 16 * a; return v < 0 ? -m : m; };`,
-    rec2020_decode: `const wp_rec2020_decode = (v) => { const a = Math.abs(v); const m = a < 0.08124285829863151 ? a / 4.5 : Math.pow((a + 0.09929682680944) / 1.09929682680944, 1 / 0.45); return v < 0 ? -m : m; };`,
-    rec2020_encode: `const wp_rec2020_encode = (v) => { const a = Math.abs(v); const m = a < 0.018053968510807 ? 4.5 * a : 1.09929682680944 * Math.pow(a, 0.45) - 0.09929682680944; return v < 0 ? -m : m; };`,
-    labF: `const wp_labF = (t) => t > 0.008856451679035631 ? Math.cbrt(t) : (t * 903.2962962962963 + 16) / 116;`,
-    labFInv: `const wp_labFInv = (t) => t > 0.20689655172413793 ? t * t * t : (116 * t - 16) / 903.2962962962963;`,
-  },
-  glsl: {
-    srgb_decode: `float wp_srgb_decode(float v) { float a = abs(v); float m = a <= 0.04045 ? a / 12.92 : pow((a + 0.055) / 1.055, 2.4); return v < 0.0 ? -m : m; }`,
-    srgb_encode: `float wp_srgb_encode(float v) { float a = abs(v); float m = a <= 0.0031308 ? 12.92 * a : 1.055 * pow(a, 1.0 / 2.4) - 0.055; return v < 0.0 ? -m : m; }`,
-    a98_decode: `float wp_a98_decode(float v) { float m = pow(abs(v), 2.19921875); return v < 0.0 ? -m : m; }`,
-    a98_encode: `float wp_a98_encode(float v) { float m = pow(abs(v), 0.4546263345195729); return v < 0.0 ? -m : m; }`,
-    prophoto_decode: `float wp_prophoto_decode(float v) { float a = abs(v); float m = a <= 0.03125 ? a / 16.0 : pow(a, 1.8); return v < 0.0 ? -m : m; }`,
-    prophoto_encode: `float wp_prophoto_encode(float v) { float a = abs(v); float m = a >= 0.001953125 ? pow(a, 0.5555555555555556) : 16.0 * a; return v < 0.0 ? -m : m; }`,
-    rec2020_decode: `float wp_rec2020_decode(float v) { float a = abs(v); float m = a < 0.08124285829863151 ? a / 4.5 : pow((a + 0.09929682680944) / 1.09929682680944, 2.2222222222222223); return v < 0.0 ? -m : m; }`,
-    rec2020_encode: `float wp_rec2020_encode(float v) { float a = abs(v); float m = a < 0.018053968510807 ? 4.5 * a : 1.09929682680944 * pow(a, 0.45) - 0.09929682680944; return v < 0.0 ? -m : m; }`,
-    labF: `float wp_labF(float t) { return t > 0.008856451679035631 ? sign(t) * pow(abs(t), 0.3333333333333333) : (t * 903.2962962962963 + 16.0) / 116.0; }`,
-    labFInv: `float wp_labFInv(float t) { return t > 0.20689655172413793 ? t * t * t : (116.0 * t - 16.0) / 903.2962962962963; }`,
-    cbrt: `float wp_cbrt(float v) { return sign(v) * pow(abs(v), 0.3333333333333333); }`,
-  },
-  wgsl: {
-    srgb_decode: `fn wp_srgb_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow((a + 0.055) / 1.055, 2.4), a / 12.92, a <= 0.04045); return select(m, -m, v < 0.0); }`,
-    srgb_encode: `fn wp_srgb_encode(v: f32) -> f32 { let a = abs(v); let m = select(1.055 * pow(a, 0.4166666666666667) - 0.055, 12.92 * a, a <= 0.0031308); return select(m, -m, v < 0.0); }`,
-    a98_decode: `fn wp_a98_decode(v: f32) -> f32 { let m = pow(abs(v), 2.19921875); return select(m, -m, v < 0.0); }`,
-    a98_encode: `fn wp_a98_encode(v: f32) -> f32 { let m = pow(abs(v), 0.4546263345195729); return select(m, -m, v < 0.0); }`,
-    prophoto_decode: `fn wp_prophoto_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow(a, 1.8), a / 16.0, a <= 0.03125); return select(m, -m, v < 0.0); }`,
-    prophoto_encode: `fn wp_prophoto_encode(v: f32) -> f32 { let a = abs(v); let m = select(16.0 * a, pow(a, 0.5555555555555556), a >= 0.001953125); return select(m, -m, v < 0.0); }`,
-    rec2020_decode: `fn wp_rec2020_decode(v: f32) -> f32 { let a = abs(v); let m = select(pow((a + 0.09929682680944) / 1.09929682680944, 2.2222222222222223), a / 4.5, a < 0.08124285829863151); return select(m, -m, v < 0.0); }`,
-    rec2020_encode: `fn wp_rec2020_encode(v: f32) -> f32 { let a = abs(v); let m = select(1.09929682680944 * pow(a, 0.45) - 0.09929682680944, 4.5 * a, a < 0.018053968510807); return select(m, -m, v < 0.0); }`,
-    labF: `fn wp_labF(t: f32) -> f32 { return select((t * 903.2962962962963 + 16.0) / 116.0, sign(t) * pow(abs(t), 0.3333333333333333), t > 0.008856451679035631); }`,
-    labFInv: `fn wp_labFInv(t: f32) -> f32 { return select((116.0 * t - 16.0) / 903.2962962962963, t * t * t, t > 0.20689655172413793); }`,
-    cbrt: `fn wp_cbrt(v: f32) -> f32 { return sign(v) * pow(abs(v), 0.3333333333333333); }`,
-  },
+  js: buildHelpers('js'),
+  glsl: buildHelpers('glsl'),
+  wgsl: buildHelpers('wgsl'),
 };
 
 // ---- per-op statement renderers ----

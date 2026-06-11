@@ -82,3 +82,14 @@ test('emitted shader sources are structurally sound for all pairs', () => {
 test('custom function names are honored', () => {
   assert.ok(glsl('oklch', 'srgb', { name: 'oklchToSrgb' }).includes('vec3 oklchToSrgb(vec3 c)'));
 });
+
+test('helper constants are computed from the tables, not retyped', async () => {
+  const { REC2020_ALPHA, REC2020_BETA, A98_GAMMA } = await import('../src/constants/transfer.js');
+  // α−1 in float64 is 0.09929682680943995 — a hand-typed "0.09929682680944"
+  // would be one ulp off and must not appear.
+  const g = glsl('rec2020', 'srgb');
+  assert.ok(g.includes(String(REC2020_ALPHA - 1)), 'rec2020 α−1 not computed');
+  assert.ok(g.includes(String(REC2020_BETA * 4.5)), 'rec2020 4.5β not computed');
+  const a = wgsl('a98-rgb', 'srgb');
+  assert.ok(a.includes(String(A98_GAMMA)), 'a98 gamma not from table');
+});

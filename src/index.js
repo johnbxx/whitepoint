@@ -18,7 +18,7 @@ export { illuminants, xyToXyz, CSS_D65, CSS_D50, CSS_D65_XYZ, CSS_D50_XYZ } from
 export { cats } from './constants/cats.js';
 
 // Gamut
-export { inGamut } from './gamut/index.js';
+export { inGamut, toGamut, clip, deltaEOK, findCusp } from './gamut/index.js';
 
 // Pixel boundary
 export { toBytes, fromBytes, toHex, fromHex } from './core/bytes.js';

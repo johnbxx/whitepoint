@@ -18,7 +18,7 @@ function srgbEncode(v) {
 }
 
 // Adobe RGB (1998), §4.3.1.2: pure power, gamma = 563/256 = 2.19921875 exactly.
-const A98_GAMMA = 563 / 256;
+export const A98_GAMMA = 563 / 256;
 function a98Decode(v) {
   const m = Math.pow(Math.abs(v), A98_GAMMA);
   return v < 0 ? -m : m;
@@ -29,7 +29,7 @@ function a98Encode(v) {
 }
 
 // ROMM RGB (ISO 22028-2): gamma 1.8 with a linear segment below Et = 1/512.
-const PROPHOTO_ET = 1 / 512;
+export const PROPHOTO_ET = 1 / 512;
 function prophotoDecode(v) {
   const a = Math.abs(v);
   const m = a <= 16 * PROPHOTO_ET ? a / 16 : Math.pow(a, 1.8);
@@ -43,8 +43,8 @@ function prophotoEncode(v) {
 
 // ITU-R BT.2020-2. α and β at the precision used by CSS Color 4 sample code
 // (solutions of the C1-continuity conditions for the 0.45 power segment).
-const REC2020_ALPHA = 1.09929682680944;
-const REC2020_BETA = 0.018053968510807;
+export const REC2020_ALPHA = 1.09929682680944;
+export const REC2020_BETA = 0.018053968510807;
 function rec2020Decode(v) {
   const a = Math.abs(v);
   const m = a < REC2020_BETA * 4.5 ? a / 4.5 : Math.pow((a + REC2020_ALPHA - 1) / REC2020_ALPHA, 1 / 0.45);
