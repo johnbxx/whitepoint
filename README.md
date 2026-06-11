@@ -24,7 +24,7 @@ false` (tree-shakes to what you import). Two entry points: `whitepoint`
 
 ## Conversions
 
-**36 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
+**40 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
 (hue in degrees). No rounding anywhere except the explicit byte boundary.
 Every function takes an optional `out` array for zero-allocation hot loops.
 
@@ -40,9 +40,14 @@ OKLCH.toXyz([0.7, 0.15, 250], out);                // tree-shakeable, zero-alloc
 | CSS Color 4 (complete) | srgb, srgb-linear, display-p3, a98-rgb, prophoto-rgb, rec2020, oklab, oklch, lab, lch, hsl, hwb, xyz-d65, xyz-d50 |
 | HDR (CSS Color HDR / BT.2100) | rec2100-pq, rec2100-hlg, ictcp, jzazbz, jzczhz |
 | Film & broadcast | aces2065-1, acescg, acescc, acescct, bt709, dci-p3 |
-| Perceptual & picking | okhsl, okhsv, luv, lchuv, din99o, din99o-lch |
+| Perceptual & picking | okhsl, okhsv, hsluv, hpluv, luv, lchuv, din99o, din99o-lch |
 | Appearance models | cam16, cam16-ucs, hct — full CAM16 with configurable viewing conditions; in no other JS library |
-| Classic | hsv, hsi |
+| Classic & special | hsv, hsi, hunter-lab, xyb |
+
+Plus device-model boundary utilities (naive CMYK; ANSI-16/256 with
+perceptual quantization) — deliberately functions rather than registry
+spaces, since the registry is trichromatic and invertible. Color difference:
+`deltaEOK`, `deltaE2000`, `deltaECAM16`.
 
 The weird ones are first-class citizens: ACES carries its ~D60 white through
 the same chromatic-adaptation machinery as everything else, OKHSL sits on the
