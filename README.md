@@ -24,7 +24,7 @@ false` (tree-shakes to what you import). Two entry points: `whitepoint`
 
 ## Conversions
 
-**40 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
+**42 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
 (hue in degrees). No rounding anywhere except the explicit byte boundary.
 Every function takes an optional `out` array for zero-allocation hot loops.
 
@@ -39,7 +39,7 @@ OKLCH.toXyz([0.7, 0.15, 250], out);                // tree-shakeable, zero-alloc
 |---|---|
 | CSS Color 4 (complete) | srgb, srgb-linear, display-p3, a98-rgb, prophoto-rgb, rec2020, oklab, oklch, lab, lch, hsl, hwb, xyz-d65, xyz-d50 |
 | HDR (CSS Color HDR / BT.2100) | rec2100-pq, rec2100-hlg, ictcp, jzazbz, jzczhz |
-| Film & broadcast | aces2065-1, acescg, acescc, acescct, bt709, dci-p3 |
+| Film & broadcast | aces2065-1, acescg, acescc, acescct, bt709, dci-p3, ycbcr-601-full, ycbcr-709-limited (+ `makeYCbCr()` — no bare 'ycbcr', by design) |
 | Perceptual & picking | okhsl, okhsv, hsluv, hpluv, luv, lchuv, din99o, din99o-lch |
 | Appearance models | cam16, cam16-ucs, hct — full CAM16 with configurable viewing conditions; in no other JS library |
 | Classic & special | hsv, hsi, hunter-lab, xyb |
@@ -87,18 +87,18 @@ wgsl('lab', 'srgb');   // same chain as WGSL
 js('oklab', 'rec2020'); // standalone dependency-free JS, used for parity tests
 ```
 
-Emitted JS is evaluated against the library across all 144 space pairs in CI
-(agreement ≤1e-9, measured ~1e-15). GPU arithmetic is float32, so end-to-end
+Emitted JS is evaluated against the library across all 529 emittable space
+pairs in CI (agreement ≤1e-9, measured ~1e-15), plus hand-templated emitters
+for the solver-based spaces (okhsl, okhsv, hsluv, hpluv — exact cusp and
+boundary solvers in the shader) and per-pixel mixing, gamut mapping, and
+compositing. GPU arithmetic is float32, so end-to-end
 shader agreement is bounded by shader precision — the *constants* are
 digit-identical; declare `precision highp float;` in GLSL.
 
 ## Verified precision
 
-Round-trip bounds, measured by `npm run precision` (20,000 samples per cell,
-seeded; enforced at 1e-9 in CI):
-
-> whitepoint@0.0.1 precision
-> node tools/precision-table.js
+Round-trip bounds across the full catalog, measured by `npm run precision`
+(seeded, regenerated in CI; enforced at 1e-9 in tests):
 
 | space | srgb → space → srgb | oklch → space → oklch |
 |---|---|---|
