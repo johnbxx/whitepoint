@@ -17,6 +17,7 @@ export {
 } from './spaces/cam16.js';
 export { HSLuv, HPLuv } from './spaces/hsluv.js';
 export { HunterLab, XYB } from './spaces/misc.js';
+export { makeYCbCr, YCbCr601Full, YCbCr709Limited } from './spaces/ycbcr.js';
 export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';

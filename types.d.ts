@@ -16,7 +16,8 @@ export type SpaceId =
   | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct'
   | 'rec2100-pq' | 'rec2100-hlg' | 'din99o' | 'din99o-lch'
   | 'cam16' | 'cam16-ucs' | 'hct'
-  | 'hsluv' | 'hpluv' | 'hunter-lab' | 'xyb';
+  | 'hsluv' | 'hpluv' | 'hunter-lab' | 'xyb'
+  | 'ycbcr-601-full' | 'ycbcr-709-limited';
 
 export interface ColorSpace {
   readonly id: string;
@@ -87,6 +88,10 @@ export const HSLuv: ColorSpace;
 export const HPLuv: ColorSpace;
 export const HunterLab: ColorSpace;
 export const XYB: ColorSpace;
+export const YCbCr601Full: ColorSpace;
+export const YCbCr709Limited: ColorSpace;
+/** Build a YCbCr space — both options required; there is no default YCbCr. */
+export function makeYCbCr(opts: { matrix: '601' | '709' | '2020'; range: 'full' | 'limited' }): ColorSpace;
 
 /** CAM16-UCS color difference ΔE′ (Euclidean in cam16-ucs). */
 export function deltaECAM16(a: ArrayLike<number>, b: ArrayLike<number>, space?: SpaceLike): number;

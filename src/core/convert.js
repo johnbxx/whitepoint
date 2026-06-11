@@ -18,6 +18,7 @@ import { DIN99o, DIN99oLCH } from '../spaces/din99o.js';
 import { CAM16JCh, CAM16UCS, HCT } from '../spaces/cam16.js';
 import { HSLuv, HPLuv } from '../spaces/hsluv.js';
 import { HunterLab, XYB } from '../spaces/misc.js';
+import { YCbCr601Full, YCbCr709Limited } from '../spaces/ycbcr.js';
 import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
@@ -72,6 +73,9 @@ export const spaces = {
   'hpluv': HPLuv,
   'hunter-lab': HunterLab,
   'xyb': XYB,
+  // No bare 'ycbcr' — by design. See spaces/ycbcr.js and makeYCbCr().
+  'ycbcr-601-full': YCbCr601Full,
+  'ycbcr-709-limited': YCbCr709Limited,
 };
 
 export function resolve(space) {

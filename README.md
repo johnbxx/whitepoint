@@ -97,22 +97,59 @@ digit-identical; declare `precision highp float;` in GLSL.
 Round-trip bounds, measured by `npm run precision` (20,000 samples per cell,
 seeded; enforced at 1e-9 in CI):
 
+> whitepoint@0.0.1 precision
+> node tools/precision-table.js
+
 | space | srgb → space → srgb | oklch → space → oklch |
 |---|---|---|
-| srgb | 0.0e+0 | 1.5e-12 |
-| srgb-linear | 6.1e-15 | 1.4e-12 |
-| display-p3 | 3.5e-15 | 1.6e-12 |
-| a98-rgb | 3.5e-15 | 1.5e-12 |
-| prophoto-rgb | 8.5e-15 | 1.5e-12 |
-| rec2020 | 8.8e-15 | 1.9e-12 |
-| oklab | 4.5e-14 | 5.7e-14 |
-| oklch | 3.7e-14 | 0.0e+0 |
-| lab | 1.8e-14 | 1.6e-12 |
-| lch | 1.8e-14 | 1.5e-12 |
-| hsl | 2.0e-15 | 1.4e-12 |
-| hwb | 1.9e-15 | 1.3e-12 |
-| xyz-d65 | 5.0e-15 | 1.5e-12 |
-| xyz-d50 | 1.1e-14 | 1.7e-12 |
+| srgb | 0.0e+0 | 1.2e-13 |
+| srgb-linear | 6.0e-15 | 6.2e-14 |
+| display-p3 | 4.0e-15 | 5.3e-14 |
+| a98-rgb | 3.9e-15 | 5.5e-14 |
+| prophoto-rgb | 8.2e-15 | 6.9e-14 |
+| rec2020 | 1.1e-14 | 5.3e-14 |
+| oklab | 4.4e-14 | 8.5e-15 |
+| oklch | 4.0e-14 | 0.0e+0 |
+| lab | 1.3e-14 | 5.7e-14 |
+| lch | 1.2e-14 | 1.5e-13 |
+| hsl | 2.0e-15 | 6.5e-14 |
+| hwb | 1.8e-15 | 7.4e-14 |
+| xyz-d65 | 4.1e-15 | 6.2e-14 |
+| xyz-d50 | 1.2e-14 | 5.3e-14 |
+| ictcp† | 7.2e-12 | 7.6e-12 |
+| jzazbz† | 4.3e-12 | 7.5e-12 |
+| jzczhz† | 4.5e-12 | 9.3e-12 |
+| luv | 2.9e-14 | 9.9e-14 |
+| lchuv | 2.1e-14 | 2.9e-13 |
+| hsv | 2.0e-15 | 1.7e-13 |
+| hsi | 1.3e-15 | 7.4e-14 |
+| okhsl†‡ | 4.2e-14 | 1.0e-13 |
+| okhsv‡ | 3.3e-14 | 1.1e-13 |
+| bt709 | 6.0e-15 | 2.2e-13 |
+| dci-p3 | 4.2e-15 | 6.2e-14 |
+| aces2065-1 | 9.8e-15 | 1.3e-13 |
+| acescg | 5.9e-15 | 5.7e-14 |
+| acescc† | 1.3e-14 | 6.7e-14 |
+| acescct† | 1.5e-14 | 7.0e-14 |
+| rec2100-pq† | 9.9e-13 | 1.6e-12 |
+| rec2100-hlg† | 4.7e-15 | 5.7e-14 |
+| din99o | 2.6e-14 | 8.5e-13 |
+| din99o-lch | 1.8e-14 | 4.9e-13 |
+| cam16 | 4.8e-14 | 1.3e-13 |
+| cam16-ucs | 5.5e-14 | 2.0e-13 |
+| hct‡ | 1.5e-13 | 5.7e-12 |
+| hsluv | 2.0e-14 | 1.4e-13 |
+| hpluv | 2.3e-14 | 6.9e-14 |
+| hunter-lab | 9.0e-15 | 5.9e-14 |
+| xyb | 7.5e-14 | 1.1e-13 |
+| ycbcr-601-full | 8.3e-15 | 1.0e-13 |
+| ycbcr-709-limited | 7.9e-15 | 2.6e-13 |
+
+_10000 samples per cell, mulberry32 seed 0x57A71C, Node v25.8.2. Hue
+error weighted by chroma. † defined or clamped within a container gamut
+(signal-domain clamping, or OKHSL's sRGB-bounded mapping); out-of-domain
+colors don't round-trip by design, so sampling is in-domain.
+‡ iterative inverse (solver tolerance, not closed-form ulps)._
 
 Differential testing against [@texel/color](https://github.com/texel-org/color)
 and [culori](https://culorijs.org) runs in CI with documented per-family
