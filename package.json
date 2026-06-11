@@ -1,0 +1,45 @@
+{
+  "name": "whitepoint",
+  "version": "0.0.1",
+  "description": "Research-grade color math: every CSS color space, arbitrary illuminants, CATs, and CCT — digit-identical in JS, GLSL, and WGSL.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./codegen": "./src/codegen/index.js"
+  },
+  "files": [
+    "src",
+    "NORTHSTAR.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "precision": "node tools/precision-table.js",
+    "bench": "node test/bench.js"
+  },
+  "keywords": [
+    "color",
+    "colour",
+    "color-space",
+    "oklab",
+    "oklch",
+    "xyz",
+    "illuminant",
+    "chromatic-adaptation",
+    "bradford",
+    "cat16",
+    "cct",
+    "glsl",
+    "wgsl",
+    "shader",
+    "display-p3",
+    "rec2020",
+    "gamut"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@texel/color": "^1.1.11",
+    "colorjs.io": "^0.5.2",
+    "culori": "^4.0.1"
+  }
+}

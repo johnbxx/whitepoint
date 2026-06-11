@@ -1,0 +1,132 @@
+// convert(coords, from, to, out) — the generic engine.
+//
+// Routing policy, in order:
+//   1. same space → copy
+//   2. registered direct route (definitional pairs like hsl↔srgb and
+//      precomposed hot paths like oklch→srgb)
+//   3. RGB↔RGB → lazily precompose the two linear matrices into one
+//   4. hub: to.fromXyz(from.toXyz(c))
+//
+// Spaces are plain objects; strings are resolved through the registry.
+
+import { sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020 } from '../spaces/rgb.js';
+import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
+import { Lab, LCH } from '../spaces/cielab.js';
+import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
+import { XYZD65, XYZD50 } from '../spaces/xyz.js';
+import { rectToPolar, polarToRect } from './polar.js';
+import { transfer } from '../constants/transfer.js';
+import { mul } from './mat3.js';
+
+export const spaces = {
+  'srgb': sRGB,
+  'srgb-linear': sRGBLinear,
+  'display-p3': DisplayP3,
+  'a98-rgb': A98RGB,
+  'prophoto-rgb': ProPhotoRGB,
+  'rec2020': Rec2020,
+  'oklab': OKLab,
+  'oklch': OKLCH,
+  'lab': Lab,
+  'lch': LCH,
+  'hsl': HSL,
+  'hwb': HWB,
+  'xyz-d65': XYZD65,
+  'xyz': XYZD65,
+  'xyz-d50': XYZD50,
+};
+
+export function resolve(space) {
+  if (typeof space === 'string') {
+    const s = spaces[space];
+    if (!s) throw new Error(`whitepoint: unknown color space "${space}" (have: ${Object.keys(spaces).join(', ')})`);
+    return s;
+  }
+  return space;
+}
+
+const routes = new Map();
+
+export function registerRoute(fromId, toId, fn) {
+  routes.set(fromId + '|' + toId, fn);
+}
+
+// --- Definitional direct routes (never touch the hub) ---
+
+registerRoute('hsl', 'srgb', hslToSrgb);
+registerRoute('srgb', 'hsl', srgbToHsl);
+registerRoute('hwb', 'srgb', hwbToSrgb);
+registerRoute('srgb', 'hwb', srgbToHwb);
+
+const HTMP = [0, 0, 0];
+registerRoute('hsl', 'hwb', (c, out) => srgbToHwb(hslToSrgb(c, HTMP), out));
+registerRoute('hwb', 'hsl', (c, out) => srgbToHsl(hwbToSrgb(c, HTMP), out));
+
+registerRoute('oklab', 'oklch', (c, out) => rectToPolar(c, out));
+registerRoute('oklch', 'oklab', (c, out) => polarToRect(c, out));
+registerRoute('lab', 'lch', (c, out) => rectToPolar(c, out));
+registerRoute('lch', 'lab', (c, out) => polarToRect(c, out));
+
+// --- Precomposed hot paths: OK family → display RGB spaces ---
+
+const PTMP = [0, 0, 0];
+for (const target of [sRGB, DisplayP3, Rec2020]) {
+  const direct = oklabToRgbDirect(target);
+  const { encode } = transfer[target.transferName];
+  const wrapped = (lab, out = [0, 0, 0]) => {
+    direct(lab, out);
+    out[0] = encode(out[0]);
+    out[1] = encode(out[1]);
+    out[2] = encode(out[2]);
+    return out;
+  };
+  registerRoute('oklab', target.id, wrapped);
+  registerRoute('oklch', target.id, (lch, out = [0, 0, 0]) => wrapped(polarToRect(lch, PTMP), out));
+}
+
+// --- Lazy RGB↔RGB precomposition ---
+
+function buildRgbRoute(F, T) {
+  const M = mul(T.m.fromXyz, F.m.toXyz); // F-linear → T-linear in one matrix
+  const m0 = M[0], m1 = M[1], m2 = M[2], m3 = M[3], m4 = M[4], m5 = M[5], m6 = M[6], m7 = M[7], m8 = M[8];
+  const { decode } = transfer[F.transferName];
+  const { encode } = transfer[T.transferName];
+  return (c, out = [0, 0, 0]) => {
+    const r = decode(c[0]), g = decode(c[1]), b = decode(c[2]);
+    out[0] = encode(m0 * r + m1 * g + m2 * b);
+    out[1] = encode(m3 * r + m4 * g + m5 * b);
+    out[2] = encode(m6 * r + m7 * g + m8 * b);
+    return out;
+  };
+}
+
+const TMP = [0, 0, 0];
+
+/**
+ * Convert coordinates between any two color spaces.
+ *
+ * @param {number[]} coords - input coordinates (length 3)
+ * @param {object|string} from - source space (object or id)
+ * @param {object|string} to - destination space (object or id)
+ * @param {number[]} [out] - optional output array (zero-allocation hot loops)
+ */
+export function convert(coords, from, to, out = [0, 0, 0]) {
+  const F = resolve(from);
+  const T = resolve(to);
+  if (F === T) {
+    out[0] = coords[0]; out[1] = coords[1]; out[2] = coords[2];
+    return out;
+  }
+  const key = F.id + '|' + T.id;
+  let route = routes.get(key);
+  if (route === undefined) {
+    if (F.m && T.m && F.transferName !== undefined && T.transferName !== undefined) {
+      route = buildRgbRoute(F, T);
+    } else {
+      route = null; // sentinel: use the hub
+    }
+    routes.set(key, route);
+  }
+  if (route) return route(coords, out);
+  return T.fromXyz(F.toXyz(coords, TMP), out);
+}
