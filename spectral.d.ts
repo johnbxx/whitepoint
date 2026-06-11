@@ -29,3 +29,14 @@ export function planckianSPD(T: number, opts?: { start?: number; step?: number; 
 export function planckianXy(T: number, opts?: { cmf?: CMF }, out?: number[]): number[];
 export function illuminantASPD(opts?: { start?: number; step?: number; end?: number }): Spectrum;
 export function daylightSPD(T: number): Spectrum;
+
+/** CCT and signed Duv, solved against the exact Planckian locus. */
+export function cctOf(xy: ArrayLike<number>): { cct: number; duv: number };
+
+/** Brettel 1997 color-vision-deficiency simulation, anchors derived from the CMFs. */
+export function simulateCVD(
+  coords: ArrayLike<number>,
+  space: string | object,
+  opts: { type: 'protanopia' | 'deuteranopia' | 'tritanopia'; severity?: number },
+  out?: number[],
+): number[];

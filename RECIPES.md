@@ -129,6 +129,31 @@ const night = reflectanceToXyz(refl, { illuminant: illuminantASPD() });
 // compare appearance: adapt 'night' to D65 first, then deltaE in oklab
 ```
 
+## Check your palette for color-blind users
+
+```js
+import { simulateCVD } from 'whitepoint/spectral';
+import { deltaEOK, convert } from 'whitepoint';
+
+// Brettel 1997, anchors derived from the CMFs — not transcribed matrices
+const seen = palette.map((c) => simulateCVD(c, 'srgb', { type: 'deuteranopia' }));
+// flag pairs that collapse for a deuteranope:
+const confusable = deltaEOK(
+  convert(seen[0], 'srgb', 'oklab'), convert(seen[1], 'srgb', 'oklab')) < 0.04;
+// types: protanopia | deuteranopia | tritanopia; severity: 0–1
+```
+
+## What temperature is this white?
+
+```js
+import { cctOf, spectrumXy, D65_SPD } from 'whitepoint/spectral';
+
+cctOf([0.3127, 0.329]);   // { cct: ~6503, duv: +0.0032 } — D65, slightly green
+cctOf([0.4476, 0.4074]);  // { cct: ~2856, duv: ~0 }      — tungsten, on-locus
+// solved against the exact Planckian locus, not McCamy's fitted formula;
+// duv > 0 is greenish, < 0 pinkish; CCT is meaningful for |duv| ≲ 0.05
+```
+
 ## Composite layers without losing precision
 
 ```js

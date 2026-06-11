@@ -15,6 +15,7 @@ import { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S } from './data.js';
 import { daylightXy } from '../lab/cct.js';
 
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
+export { simulateCVD } from './cvd.js';
 
 /** Sample a uniform-grid spectrum at wavelength λ (nm), linear interpolation. */
 export function sampleSpd(spd, lambda) {
@@ -114,6 +115,59 @@ export function illuminantASPD(opts) {
 }
 
 // ---- CIE daylight synthesis (CIE 015 §4.1.2) ----
+
+// ---- Inverse CCT: what temperature is this white? ----
+
+// CIE 1960 uv (the chromaticity space CCT is defined in; CIE 015).
+function uv1960(xy, out = [0, 0]) {
+  const d = -2 * xy[0] + 12 * xy[1] + 3;
+  out[0] = (4 * xy[0]) / d;
+  out[1] = (6 * xy[1]) / d;
+  return out;
+}
+
+/**
+ * Correlated color temperature and Duv of a chromaticity — solved by
+ * minimizing CIE 1960 uv distance to this library's EXACT Planckian locus
+ * (Planck's law integrated against the CMFs), not a fitted approximation
+ * like McCamy. Duv is signed: positive above the locus (greenish), negative
+ * below (pinkish). CCT is conventionally meaningful for |duv| ≲ 0.05.
+ *
+ * @param {number[]} xy - chromaticity
+ * @returns {{cct: number, duv: number}}
+ */
+export function cctOf(xy) {
+  const target = uv1960(xy);
+  const P = [0, 0];
+  const locusUv = (T) => uv1960(planckianXy(T), P);
+  const d2 = (T) => {
+    const p = locusUv(T);
+    const du = p[0] - target[0], dv = p[1] - target[1];
+    return du * du + dv * dv;
+  };
+
+  // golden-section in mired (1e6/T), where the locus is most uniform
+  const PHI = (Math.sqrt(5) - 1) / 2;
+  let lo = 1e6 / 25000, hi = 1e6 / 1000;
+  let x1 = hi - PHI * (hi - lo), x2 = lo + PHI * (hi - lo);
+  let f1 = d2(1e6 / x1), f2 = d2(1e6 / x2);
+  for (let i = 0; i < 60 && hi - lo > 1e-7; i++) {
+    if (f1 < f2) {
+      hi = x2; x2 = x1; f2 = f1;
+      x1 = hi - PHI * (hi - lo); f1 = d2(1e6 / x1);
+    } else {
+      lo = x1; x1 = x2; f1 = f2;
+      x2 = lo + PHI * (hi - lo); f2 = d2(1e6 / x2);
+    }
+  }
+  const cct = 1e6 / ((lo + hi) / 2);
+
+  // signed distance, Ohno's convention: positive when v sits above the
+  // locus (greenish), negative below (pinkish)
+  const p = locusUv(cct);
+  const sign = Math.sign(target[1] - p[1]) || 1;
+  return { cct, duv: sign * Math.sqrt(d2(cct)) };
+}
 
 /**
  * Relative SPD of CIE daylight at correlated color temperature T
