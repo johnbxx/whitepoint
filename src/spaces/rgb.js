@@ -79,4 +79,9 @@ export const ACEScg = makeRgbSpace('acescg', _ap1.toXyz, _ap1.fromXyz, 'linear')
 export const ACEScc = makeRgbSpace('acescc', _ap1.toXyz, _ap1.fromXyz, 'acescc');
 export const ACEScct = makeRgbSpace('acescct', _ap1.toXyz, _ap1.fromXyz, 'acescct');
 
+// BT.2100 HDR signal spaces (CSS Color HDR draft): rec2020 primaries with
+// PQ / HLG encodings, media-white relative (linear 1.0 = 203 cd/m²).
+export const Rec2100PQ = makeRgbSpace('rec2100-pq', _rec2020.toXyz, _rec2020.fromXyz, 'rec2100pq');
+export const Rec2100HLG = makeRgbSpace('rec2100-hlg', _rec2020.toXyz, _rec2020.fromXyz, 'rec2100hlg');
+
 export { CSS_D50, CSS_D65 };

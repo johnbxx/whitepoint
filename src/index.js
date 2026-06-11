@@ -8,7 +8,9 @@ export { convert, spaces, resolve, registerRoute } from './core/convert.js';
 export {
   sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020,
   BT709, DCIP3, ACES2065_1, ACEScg, ACEScc, ACEScct,
+  Rec2100PQ, Rec2100HLG,
 } from './spaces/rgb.js';
+export { DIN99o, DIN99oLCH } from './spaces/din99o.js';
 export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';

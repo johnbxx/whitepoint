@@ -12,7 +12,9 @@
 import {
   sRGB, sRGBLinear, DisplayP3, A98RGB, ProPhotoRGB, Rec2020,
   BT709, DCIP3, ACES2065_1, ACEScg, ACEScc, ACEScct,
+  Rec2100PQ, Rec2100HLG,
 } from '../spaces/rgb.js';
+import { DIN99o, DIN99oLCH } from '../spaces/din99o.js';
 import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
@@ -56,6 +58,10 @@ export const spaces = {
   'acescg': ACEScg,
   'acescc': ACEScc,
   'acescct': ACEScct,
+  'rec2100-pq': Rec2100PQ,
+  'rec2100-hlg': Rec2100HLG,
+  'din99o': DIN99o,
+  'din99o-lch': DIN99oLCH,
 };
 
 export function resolve(space) {

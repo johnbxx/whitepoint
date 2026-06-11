@@ -24,7 +24,7 @@ false` (tree-shakes to what you import). Two entry points: `whitepoint`
 
 ## Conversions
 
-All 14 CSS Color 4 spaces against an XYZ-D65 hub. Channels are 0–1 floats
+**33 color spaces** against an XYZ-D65 hub. Channels are 0–1 floats
 (hue in degrees). No rounding anywhere except the explicit byte boundary.
 Every function takes an optional `out` array for zero-allocation hot loops.
 
@@ -33,10 +33,21 @@ import { convert, OKLCH, sRGB } from 'whitepoint';
 
 convert([0.7, 0.15, 250], 'oklch', 'display-p3');  // by id
 OKLCH.toXyz([0.7, 0.15, 250], out);                // tree-shakeable, zero-alloc
-
-// spaces: srgb, srgb-linear, display-p3, a98-rgb, prophoto-rgb, rec2020,
-//         oklab, oklch, lab, lch, hsl, hwb, xyz-d65, xyz-d50
 ```
+
+| family | spaces |
+|---|---|
+| CSS Color 4 (complete) | srgb, srgb-linear, display-p3, a98-rgb, prophoto-rgb, rec2020, oklab, oklch, lab, lch, hsl, hwb, xyz-d65, xyz-d50 |
+| HDR (CSS Color HDR / BT.2100) | rec2100-pq, rec2100-hlg, ictcp, jzazbz, jzczhz |
+| Film & broadcast | aces2065-1, acescg, acescc, acescct, bt709, dci-p3 |
+| Perceptual & picking | okhsl, okhsv, luv, lchuv, din99o, din99o-lch |
+| Classic | hsv, hsi |
+
+The weird ones are first-class citizens: ACES carries its ~D60 white through
+the same chromatic-adaptation machinery as everything else, OKHSL sits on the
+*exact* sRGB gamut boundary rather than the reference implementation's
+polynomial fit, and every space joins `mix`, `toGamut`, and `serialize`
+(where CSS defines a form) on arrival.
 
 RGB↔XYZ matrices are **derived from the cited primaries at module load** and
 asserted against the spec's published values in CI — this library contains no

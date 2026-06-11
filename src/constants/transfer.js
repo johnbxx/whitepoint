@@ -106,6 +106,38 @@ function acescctEncode(v) {
   return (Math.log2(v) + 9.72) / 17.52;
 }
 
+// ITU-R BT.2100 HDR signal encodings as media-white-relative transfers,
+// per the CSS Color HDR draft (and colorjs.io, differentially verified):
+// PQ anchors relative Y=1 at 203 cd/m² (BT.2408); HLG scales so that 18%
+// grey sits at signal 0.38 and media white encodes to exactly 0.75.
+import { pqEncode, pqDecode, YW } from './hdr.js';
+
+function rec2100PqDecode(v) {
+  return pqDecode(v) / YW;
+}
+function rec2100PqEncode(v) {
+  return pqEncode(v * YW);
+}
+
+const HLG_A = 0.17883277;
+const HLG_B = 1 - 4 * HLG_A;
+const HLG_C = 0.5 - HLG_A * Math.log(4 * HLG_A);
+const HLG_SCALE = 3.7743; // CSS Color HDR: 18% grey → 0.38, media white → 0.75
+
+function rec2100HlgDecode(v) {
+  if (v <= 0) return 0;
+  // BT.2390 §6.3 EOTF, then scale so media white is 1.0
+  if (v <= 0.5) return ((v * v) / 3) * HLG_SCALE;
+  return ((Math.exp((v - HLG_C) / HLG_A) + HLG_B) / 12) * HLG_SCALE;
+}
+function rec2100HlgEncode(v) {
+  if (v <= 0) return 0;
+  const x = v / HLG_SCALE;
+  // BT.2390 §6.1 OETF
+  if (x <= 1 / 12) return Math.sqrt(3 * x);
+  return HLG_A * Math.log(12 * x - HLG_B) + HLG_C;
+}
+
 const identity = (v) => v;
 
 export const transfer = {
@@ -117,5 +149,7 @@ export const transfer = {
   gamma26:  { decode: gamma26Decode,  encode: gamma26Encode },
   acescc:   { decode: acesccDecode,   encode: acesccEncode },
   acescct:  { decode: acescctDecode,  encode: acescctEncode },
+  rec2100pq:  { decode: rec2100PqDecode,  encode: rec2100PqEncode },
+  rec2100hlg: { decode: rec2100HlgDecode, encode: rec2100HlgEncode },
   linear:   { decode: identity,       encode: identity },
 };

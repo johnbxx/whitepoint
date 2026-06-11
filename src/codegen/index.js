@@ -148,7 +148,7 @@ export function jsGamutMap(gamut, { name = gamutMapName(gamut) } = {}) {
 
 const MIX_HUE_CHANNEL = {
   hsl: 0, hwb: 0, hsv: 0, hsi: 0, okhsl: 0, okhsv: 0,
-  lch: 2, oklch: 2, lchuv: 2, jzczhz: 2,
+  lch: 2, oklch: 2, lchuv: 2, jzczhz: 2, 'din99o-lch': 2,
 };
 const HUE_METHODS = ['shorter', 'longer', 'increasing', 'decreasing'];
 

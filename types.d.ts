@@ -13,7 +13,8 @@ export type SpaceId =
   | 'xyz-d65' | 'xyz' | 'xyz-d50'
   | 'ictcp' | 'jzazbz' | 'jzczhz'
   | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv'
-  | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct';
+  | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct'
+  | 'rec2100-pq' | 'rec2100-hlg' | 'din99o' | 'din99o-lch';
 
 export interface ColorSpace {
   readonly id: string;
@@ -73,6 +74,10 @@ export const ACES2065_1: ColorSpace;
 export const ACEScg: ColorSpace;
 export const ACEScc: ColorSpace;
 export const ACEScct: ColorSpace;
+export const Rec2100PQ: ColorSpace;
+export const Rec2100HLG: ColorSpace;
+export const DIN99o: ColorSpace;
+export const DIN99oLCH: ColorSpace;
 
 export function hsvToSrgb(hsv: ArrayLike<number>, out?: Vec3): Vec3;
 export function srgbToHsv(rgb: ArrayLike<number>, out?: Vec3): Vec3;

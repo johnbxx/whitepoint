@@ -25,6 +25,8 @@ const COLOR_FN_IDS = {
   // CSS Color HDR draft predefined spaces
   'ictcp': 'ictcp',
   'jzazbz': 'jzazbz',
+  'rec2100-pq': 'rec2100-pq',
+  'rec2100-hlg': 'rec2100-hlg',
 };
 
 /**
