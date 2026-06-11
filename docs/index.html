@@ -118,9 +118,11 @@
 
   <section>
     <h2>Physics, live: the Planckian locus</h2>
-    <p class="sub">Blackbody color from 1,000 K to 12,000 K — computed by integrating
-    Planck's law against the CIE color matching functions, per pixel column, right now.
-    Not a fitted approximation: the law itself.</p>
+    <p class="sub">Blackbody color from 1,000 K to 20,000 K (mired-linear axis), each column
+    computed by integrating Planck's law against the CIE color matching functions, right
+    now, and shown at the maximum brightness sRGB can carry its chromaticity. Not a fitted
+    approximation: the law itself. (A blackbody never reaches saturated blue — the locus
+    asymptotes at a pale sky-blue. Physics, not a bug.)</p>
     <canvas id="planck" height="64"></canvas>
   </section>
 
@@ -274,18 +276,27 @@ function drawIlluminants() {
 $('cct').oninput = drawIlluminants;
 
 // ---- demo 3: Planckian locus ----
+// Chromaticity-preserving rendering: each column shows the blackbody
+// chromaticity at the MAXIMUM brightness sRGB can carry it — clipping a
+// fixed-brightness strip would wash out both the deep-orange and the
+// pale-blue ends. Mired-linear axis (1e6/T), the perceptually even scale.
 function drawPlanck() {
   const cv = $('planck');
   const ctx = cv.getContext('2d');
   const W = cv.width = cv.clientWidth * devicePixelRatio;
   cv.height = 64 * devicePixelRatio;
   const xy = [0, 0];
+  const MIRED_HOT = 1e6 / 1000, MIRED_COLD = 1e6 / 20000;
   for (let x = 0; x < W; x += 2) {
-    const T = 1000 + (x / W) * 11000;
-    spectral.planckianXy(T, undefined, xy);
+    const mired = MIRED_HOT + (x / W) * (MIRED_COLD - MIRED_HOT);
+    spectral.planckianXy(1e6 / mired, undefined, xy);
     const xyz = [xy[0] / xy[1], 1, (1 - xy[0] - xy[1]) / xy[1]];
-    const srgb = convert(xyz.map((v) => v * 0.85), 'xyz-d65', 'srgb');
-    ctx.fillStyle = clipToHex(srgb);
+    const lin = convert(xyz, 'xyz-d65', 'srgb-linear');
+    // clamp the (slightly) out-of-triangle hot end, then scale luminance
+    // so the chromaticity is shown as bright as sRGB allows
+    for (let i = 0; i < 3; i++) lin[i] = Math.max(lin[i], 0);
+    const s = 0.97 / Math.max(lin[0], lin[1], lin[2]);
+    ctx.fillStyle = toHex(convert([lin[0] * s, lin[1] * s, lin[2] * s], 'srgb-linear', 'srgb'));
     ctx.fillRect(x, 0, 2, cv.height);
   }
 }
