@@ -20,12 +20,18 @@
       "import": "./src/spectral/index.js"
     }
   },
+  "bin": {
+    "whitepoint-skill": "./bin/install-skill.js"
+  },
   "files": [
     "src",
+    "bin",
+    "skills",
     "types.d.ts",
     "codegen.d.ts",
     "spectral.d.ts",
-    "NORTHSTAR.md"
+    "NORTHSTAR.md",
+    "RECIPES.md"
   ],
   "scripts": {
     "test": "node --test",

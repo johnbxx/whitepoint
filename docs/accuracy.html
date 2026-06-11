@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — measured accuracy</title>
+<meta name="description" content="Log-scale accuracy measurements: whitepoint's exact gamut geometry vs fitted approximations, and full-catalog round-trip error bounds.">
+<style>
+  :root {
+    --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
+    --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7; --warn: #f7a14b;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, sans-serif; padding-bottom: 6rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  header { padding: 4rem 0 1rem; }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; }
+  .crumb { color: var(--dim); font-size: 0.9rem; margin-bottom: 1rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  section { margin-top: 3.5rem; }
+  h2 { font-size: 1.35rem; margin-bottom: 0.4rem; }
+  .sub { color: var(--dim); margin-bottom: 1.25rem; max-width: 46rem; }
+  svg { width: 100%; height: auto; background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; }
+  .legend { display: flex; gap: 1.5rem; margin: 0.7rem 0 0; font-size: 0.85rem; color: var(--dim); font-family: var(--mono); }
+  .legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  .note { color: var(--dim); font-size: 0.85rem; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="crumb"><a href="./index.html">← whitepoint</a></p>
+    <h1>Measured accuracy</h1>
+    <p class="sub">Every chart on this page is generated from the repository's own
+    measurement scripts (<code>tools/cusp-accuracy.js</code>,
+    <code>tools/build-accuracy-data.js</code>) — rerun them yourself. Log scales,
+    because the differences span orders of magnitude.</p>
+  </header>
+
+  <section>
+    <h2>Exact vs fitted: distance from the true sRGB gamut boundary</h2>
+    <p class="sub">The gamut cusp drives OKLCH gamut mapping. The reference approach
+    (used by @texel/color, colorjs, and the okhsl reference) approximates it with
+    fitted polynomials plus one Halley step; whitepoint solves the boundary cubics
+    exactly. Below: how far each library's claimed cusp sits from its own gamut
+    boundary, per hue, measured with each library's own conversions.</p>
+    <svg id="cuspChart" viewBox="0 0 880 360"></svg>
+    <div class="legend">
+      <span><i style="background:#4ba3f7"></i>whitepoint (exact solver)</span>
+      <span><i style="background:#f7a14b"></i>@texel/color (polynomial fit + Halley)</span>
+    </div>
+    <p class="note">The fit is excellent at most hues (~10⁻⁹) and degrades five
+    orders of magnitude near the sRGB blue corner — precisely where wide-gamut
+    content lands when mapped down, and exactly the region its own code comments
+    flag. The exact solver is flat at float64 limits, every hue, same speed
+    (118 vs 113 ns/op).</p>
+  </section>
+
+  <section>
+    <h2>Round-trip error, full catalog</h2>
+    <p class="sub">Maximum <code>srgb → space → srgb</code> error across 4,000
+    seeded random colors, for every one of the 42 registry spaces. The bound
+    enforced in CI is 10⁻⁹; the measured reality sits three to six orders of
+    magnitude below it.</p>
+    <svg id="rtChart" viewBox="0 0 880 560"></svg>
+    <p class="note">Iterative inverses (hct) and signal-domain spaces sit slightly
+    above the closed-form pack, exactly as their documented solver tolerances
+    predict. Full table with both fuzz columns and footnotes:
+    <a href="https://github.com/johnbxx/whitepoint#verified-precision">README §
+    Verified precision</a>.</p>
+  </section>
+
+  <section>
+    <h2>Why the gap exists</h2>
+    <p class="sub">whitepoint's standing policy is <em>derive, don't transcribe —
+    and solve, don't fit</em>. Matrices are computed from cited primaries at module
+    load (and checked against spec publications in CI); gamut geometry is solved
+    from the channel cubics. Approximations only survive where they are
+    <em>definitional</em> (OKHSL's shaping polynomial, WCAG's historical
+    threshold) — and then they're implemented exactly as cited, quirks documented.
+    The same policy caught the widely-copied stale ProPhoto/Bradford matrices
+    (~10⁻⁵ off spec derivation) that other libraries still ship.</p>
+  </section>
+</main>
+
+<script type="module">
+import { cusp, roundTrip } from './accuracy-data.js';
+
+const FLOOR = 1e-16;
+const logY = (v, top, bottom, h, pad) => {
+  const lv = Math.log10(Math.max(v, FLOOR));
+  return pad + (top - lv) / (top - bottom) * (h - 2 * pad);
+};
+
+function gridAndLabels(svg, top, bottom, W, H, pad) {
+  let g = '';
+  for (let e = Math.ceil(bottom); e <= Math.floor(top); e++) {
+    const y = logY(Math.pow(10, e), top, bottom, H, pad);
+    g += `<line x1="${pad}" x2="${W - 16}" y1="${y}" y2="${y}" stroke="#23262e" stroke-width="1"/>`;
+    if (e % 3 === 0) g += `<text x="${pad - 8}" y="${y + 4}" fill="#9aa0ae" font-size="11" text-anchor="end" font-family="ui-monospace,monospace">1e${e}</text>`;
+  }
+  svg.innerHTML += g;
+}
+
+// ---- cusp chart ----
+{
+  const svg = document.getElementById('cuspChart');
+  const W = 880, H = 360, pad = 56;
+  const top = -2, bottom = -16;
+  gridAndLabels(svg, top, bottom, W, H, pad);
+  const x = (h) => pad + (h / 360) * (W - pad - 16);
+  const path = (vals, color) =>
+    `<path d="${vals.map((v, i) => `${i ? 'L' : 'M'}${x(cusp.hues[i]).toFixed(1)},${logY(v, top, bottom, H, pad).toFixed(1)}`).join('')}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  svg.innerHTML += path(cusp.texel, '#f7a14b') + path(cusp.whitepoint, '#4ba3f7');
+  // hue axis labels + blue-corner annotation
+  for (const h of [0, 90, 180, 270, 360]) {
+    svg.innerHTML += `<text x="${x(h)}" y="${H - 8}" fill="#9aa0ae" font-size="11" text-anchor="middle" font-family="ui-monospace,monospace">${h}°</text>`;
+  }
+  svg.innerHTML += `<text x="${x(264)}" y="${logY(6e-4, top, bottom, H, pad) - 10}" fill="#f7a14b" font-size="11" text-anchor="middle">sRGB blue corner →</text>`;
+}
+
+// ---- round-trip chart ----
+{
+  const svg = document.getElementById('rtChart');
+  const W = 880, H = 560, pad = 56;
+  const top = -8, bottom = -16;
+  gridAndLabels(svg, top, bottom, W, H, pad);
+  const n = roundTrip.length;
+  const bw = (W - pad - 16) / n;
+  let bars = '';
+  roundTrip.forEach((r, i) => {
+    const y = logY(r.err === 0 ? FLOOR : r.err, top, bottom, H, pad);
+    const xx = pad + i * bw;
+    bars += `<rect x="${(xx + 1).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(H - pad - y).toFixed(1)}" fill="#4ba3f7" opacity="0.85" rx="2"><title>${r.id}: ${r.err}</title></rect>`;
+    bars += `<text x="${(xx + bw / 2).toFixed(1)}" y="${H - pad + 10}" fill="#9aa0ae" font-size="9.5" text-anchor="end" font-family="ui-monospace,monospace" transform="rotate(-55 ${(xx + bw / 2).toFixed(1)} ${H - pad + 10})">${r.id}</text>`;
+  });
+  // CI bound line at 1e-9
+  const yb = logY(1e-9, top, bottom, H, pad);
+  svg.innerHTML += bars + `<line x1="${pad}" x2="${W - 16}" y1="${yb}" y2="${yb}" stroke="#f7a14b" stroke-dasharray="5 4" stroke-width="1.4"/><text x="${W - 20}" y="${yb - 6}" fill="#f7a14b" font-size="11" text-anchor="end">CI bound (1e-9)</text>`;
+}
+</script>
+</body>
+</html>

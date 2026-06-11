@@ -1,0 +1,185 @@
+# whitepoint recipes
+
+Job-to-be-done snippets. Conventions throughout: colors are plain arrays,
+channels are 0–1 floats (hue in degrees; CIE Lab/Luv L runs 0–100), every
+function takes an optional `out` array for zero-allocation loops.
+
+## Hex in, any space out
+
+```js
+import { fromHex, toHex, convert } from 'whitepoint';
+
+const oklch = convert(fromHex('#4ba3f7'), 'srgb', 'oklch');
+// → [0.6976, 0.1334, 250.4]
+toHex(convert([0.6976, 0.1334, 250.4], 'oklch', 'srgb')); // '#4ba3f7'
+```
+
+## A perceptual gradient (CSS output)
+
+```js
+import { mix, convert, serialize, toGamut } from 'whitepoint';
+
+const a = convert(fromHex('#0b3d91'), 'srgb', 'oklch');
+const b = convert(fromHex('#f7b32b'), 'srgb', 'oklch');
+const stops = Array.from({ length: 9 }, (_, i) => {
+  const c = mix(a, b, i / 8, 'oklch');                 // CSS Color 4 §12 hue arcs
+  return serialize(toGamut(c, 'oklch'), 'oklch');      // gamut-safe css strings
+});
+```
+
+## The same gradient, in your fragment shader
+
+```js
+import { glslMix, glsl } from 'whitepoint/codegen';
+
+const shaderSrc = `
+  ${glsl('oklch', 'srgb')}        // vec3 wp_oklch_to_srgb(vec3 c)
+  ${glslMix('oklch')}             // vec3 wp_mix_oklch_shorter(vec3 a, vec3 b, float t)
+  // in main(): color = wp_oklch_to_srgb(wp_mix_oklch_shorter(A, B, t));
+`;
+// constants are digit-identical to the JS above — same tables, parity-tested
+```
+
+## Display a wide-gamut color on an sRGB screen
+
+```js
+import { toGamut, convert } from 'whitepoint';
+
+const p3Color = [0, 1, 0.2];                            // out of sRGB
+const safe = toGamut(convert(p3Color, 'display-p3', 'oklch'), 'oklch',
+  { gamut: 'srgb', method: 'css' });                    // spec algorithm
+// method: 'cusp' = faster, hue-exact; 'clip' = the blunt baseline
+```
+
+## Check (and fix) text contrast
+
+```js
+import { contrastWCAG2, mix, convert } from 'whitepoint';
+
+let fg = convert(fromHex('#888888'), 'srgb', 'oklch');
+const bg = [1, 1, 1];
+while (contrastWCAG2(convert(fg, 'oklch', 'srgb'), bg) < 4.5) {
+  fg[0] -= 0.01;                                        // darken in OKLCH: hue-stable
+}
+```
+
+## Re-light a brand color (the illuminant lab)
+
+```js
+import { adapt, convert, illuminantFromCCT } from 'whitepoint';
+
+const xyz = convert(brandSrgb, 'srgb', 'xyz-d65');
+const underStoreLight = adapt(xyz, 'F2', 'D65');        // fluorescent → display
+const underTungsten  = adapt(xyz, 'A', 'D65', undefined, { cat: 'cat16' });
+const at5000K        = adapt(xyz, illuminantFromCCT(5000), 'D65');
+```
+
+## A Material-style tonal palette via HCT
+
+```js
+import { convert } from 'whitepoint';
+
+const [h, c] = convert(seedSrgb, 'srgb', 'hct');
+const tones = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95].map((t) =>
+  toHex(toGamut(convert([h, c, t], 'hct', 'srgb'), 'srgb', { method: 'cusp' })));
+```
+
+## Sort by perceptual similarity
+
+```js
+import { deltaE2000, deltaEOK, convert } from 'whitepoint';
+
+const target = convert(pick, 'srgb', 'lab');
+swatches.sort((p, q) =>
+  deltaE2000(convert(p, 'srgb', 'lab'), target) -
+  deltaE2000(convert(q, 'srgb', 'lab'), target));
+// deltaEOK (fast) and deltaECAM16 (appearance-grade) take the same shape
+```
+
+## HDR: tone operations in ICtCp, on the GPU
+
+```js
+import { glsl } from 'whitepoint/codegen';
+
+const src = `
+  ${glsl('rec2100-pq', 'ictcp')}   // decode PQ signal into ICtCp
+  ${glsl('ictcp', 'rec2100-pq')}   // and back after your tone curve on I
+`;
+```
+
+## VFX handoff: sRGB ↔ ACEScg
+
+```js
+import { convert } from 'whitepoint';
+
+const acescg = convert(srgb, 'srgb', 'acescg');          // scene-linear AP1
+const log = convert(acescg, 'acescg', 'acescc');         // colorist log
+// ~D60 white point handled by the same CAT machinery as everything else
+```
+
+## Spectral: a measured sample under two lights
+
+```js
+import { reflectanceToXyz, illuminantASPD, D65_SPD } from 'whitepoint/spectral';
+import { convert, adapt } from 'whitepoint';
+
+const refl = { start: 380, step: 10, values: measuredReflectance }; // 0–1
+const day = reflectanceToXyz(refl);                       // D65 by default
+const night = reflectanceToXyz(refl, { illuminant: illuminantASPD() });
+// compare appearance: adapt 'night' to D65 first, then deltaE in oklab
+```
+
+## Composite layers without losing precision
+
+```js
+import { premultiply, overStack, unpremultiply, blend } from 'whitepoint';
+
+const layers = sprites.map((s) => premultiply(s));       // [r,g,b,a] straight → premul
+const flat = unpremultiply(overStack(layers, 'srgb-linear')); // divide ONCE, at the end
+const moody = blend(top, bottom, 'soft-light');           // W3C blend modes, straight alpha
+```
+
+## YCbCr from a JPEG decoder
+
+```js
+import { convert, makeYCbCr } from 'whitepoint';
+
+convert([y, cb, cr].map((v) => v / 255), 'ycbcr-601-full', 'srgb'); // JFIF
+const video = makeYCbCr({ matrix: '709', range: 'limited' });        // both REQUIRED
+// there is deliberately no bare 'ycbcr' — the name underdetermines the math
+```
+
+## The zero-allocation hot loop
+
+```js
+import { convert, OKLCH, sRGB } from 'whitepoint';
+
+const out = [0, 0, 0];
+for (const px of pixels) {
+  convert(px, OKLCH, sRGB, out);   // space OBJECTS + out array: 47 ns, 0 B
+  write(out);
+}
+```
+
+## CSS string parsing (interop, on purpose)
+
+```js
+// whitepoint refuses input parsing by design (grammar churn, `none`
+// semantics). The one-liner interop:
+import { parse } from 'culori';
+const { r, g, b } = parse('oklch(70% 0.15 250deg)') /* culori converts */;
+// …or keep coords in whitepoint arrays from the start.
+```
+
+## Pitfalls worth knowing
+
+- **Lab/Luv L is 0–100; OKLab L is 0–1** — both per spec; don't mix them up.
+- **HDR/log spaces clamp negative linear light** (`ictcp`, `jzazbz`,
+  `rec2100-*`, `acescc/t`): out-of-container colors don't round-trip, by
+  design. **OKHSL is only invertible inside sRGB** (its s>0.8 mapping has a
+  pole at the boundary).
+- **Alpha is not a coordinate.** 3-channel everywhere; alpha-aware entry
+  points (`mixAlpha`, `composite`, `serialize`'s option) are explicit.
+- **Compositing on hue-polar spaces throws** — there's no defensible meaning.
+- The default `mix()` hue arc is `'shorter'`; CSS's other three
+  (`longer`/`increasing`/`decreasing`) are options.

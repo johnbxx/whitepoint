@@ -3,14 +3,15 @@
 > **A research-grade color laboratory for the web.**
 > **Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.**
 
+[![CI](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml/badge.svg)](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml)
+&nbsp;[**live demos**](https://johnbxx.github.io/whitepoint/)
+· [**measured accuracy**](https://johnbxx.github.io/whitepoint/accuracy.html)
+· [**recipes**](./RECIPES.md)
+· [north star](./NORTHSTAR.md)
+
 Every conversion is generated from one table of cited constants. The matrix that
 runs in your JavaScript is the matrix that runs in your shader — and CI verifies
 it to the last digit. Stop hand-porting color matrices.
-
-**Status: pre-release.** Conversions, the illuminant lab, the codegen pipeline,
-gamut mapping, and the performance pass are built and verified; packaging
-(types, npm) and the extended space catalog are in progress.
-See [NORTHSTAR.md](./NORTHSTAR.md) for the principles and roadmap.
 
 ## What can you do here that you can't anywhere else?
 
@@ -276,6 +277,17 @@ blend(src, dst, 'soft-light');                       // W3C blend modes, straigh
 
 import { glslComposite, wgslComposite } from 'whitepoint/codegen';
 glslComposite('source-atop'); // vec4 wp_composite_source_atop(vec4 src, vec4 dst)
+```
+
+## Working with coding agents
+
+The package ships an agent skill — conventions, the API map, and the pitfalls
+that produce wrong colors — so Claude Code (and compatible agents) can work
+with whitepoint precisely:
+
+```sh
+npx whitepoint-skill          # install into this project's .claude/skills/
+npx whitepoint-skill --user   # or for all your projects
 ```
 
 ## Scope rule and anti-goals
