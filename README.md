@@ -12,6 +12,16 @@ gamut mapping, and the performance pass are built and verified; packaging
 (types, npm) and the extended space catalog are in progress.
 See [NORTHSTAR.md](./NORTHSTAR.md) for the principles and roadmap.
 
+## Install
+
+```sh
+npm install whitepoint
+```
+
+Plain ESM, zero dependencies, TypeScript definitions included, `sideEffects:
+false` (tree-shakes to what you import). Two entry points: `whitepoint`
+(conversions, illuminants, gamut) and `whitepoint/codegen` (shader emission).
+
 ## Conversions
 
 All 14 CSS Color 4 spaces against an XYZ-D65 hub. Channels are 0–1 floats

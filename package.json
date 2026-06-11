@@ -4,19 +4,30 @@
   "description": "Research-grade color math: every CSS color space, arbitrary illuminants, CATs, and CCT — digit-identical in JS, GLSL, and WGSL.",
   "type": "module",
   "main": "./src/index.js",
+  "types": "./types.d.ts",
+  "sideEffects": false,
   "exports": {
-    ".": "./src/index.js",
-    "./codegen": "./src/codegen/index.js"
+    ".": {
+      "types": "./types.d.ts",
+      "import": "./src/index.js"
+    },
+    "./codegen": {
+      "types": "./codegen.d.ts",
+      "import": "./src/codegen/index.js"
+    }
   },
   "files": [
     "src",
+    "types.d.ts",
+    "codegen.d.ts",
     "NORTHSTAR.md"
   ],
   "scripts": {
     "test": "node --test",
     "precision": "node tools/precision-table.js",
     "bench": "node tools/bench.js",
-    "alloc": "node --expose-gc tools/alloc-audit.js"
+    "alloc": "node --expose-gc tools/alloc-audit.js",
+    "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts"
   },
   "keywords": [
     "color",
