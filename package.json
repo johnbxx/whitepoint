@@ -55,6 +55,14 @@
     "gamut"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnbxx/whitepoint.git"
+  },
+  "homepage": "https://johnbxx.github.io/whitepoint/",
+  "bugs": {
+    "url": "https://github.com/johnbxx/whitepoint/issues"
+  },
   "devDependencies": {
     "@material/material-color-utilities": "^0.4.0",
     "@texel/color": "^1.1.11",
