@@ -4,7 +4,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert';
-import { convert, toGamut, inGamut, deltaEOK, findCusp } from '../src/index.js';
+import { convert, toGamut, inGamut, deltaEOK, findCusp, findCuspNumerical } from '../src/index.js';
 import * as texel from '@texel/color';
 import { toGamut as culoriToGamut } from 'culori';
 
@@ -161,6 +161,23 @@ test('emitted gamut mapper agrees with the library within bisection bounds', asy
   assert.ok(g.includes('vec3 wp_gamut_map_oklch_to_display_p3(vec3 lch)'), 'glsl signature');
   const w = wgslGamutMap('rec2020');
   assert.ok(w.includes('fn wp_gamut_map_oklch_to_rec2020(lch: vec3<f32>) -> vec3<f32>'), 'wgsl signature');
+});
+
+test('exact cusp matches numerical ground truth', () => {
+  // findCusp solves the channel-zero cubic exactly; findCuspNumerical brute-
+  // forces the same point through full conversions. The numerical L is only
+  // resolved to ~1e-4 (golden-section width); C is much tighter because the
+  // chroma derivative vanishes at the maximum.
+  for (const gamut of GAMUTS) {
+    for (let h = 5; h < 360; h += 36.7) {
+      const exact = findCusp(h, gamut);
+      const truth = findCuspNumerical(h, gamut);
+      assert.ok(Math.abs(exact[0] - truth[0]) < 1e-3,
+        `${gamut}@${h.toFixed(1)} L: exact ${exact[0]} vs numerical ${truth[0]}`);
+      assert.ok(Math.abs(exact[1] - truth[1]) < 1e-3,
+        `${gamut}@${h.toFixed(1)} C: exact ${exact[1]} vs numerical ${truth[1]}`);
+    }
+  }
 });
 
 test('findCusp locates a boundary maximum', () => {

@@ -34,18 +34,26 @@ function bench(label, fn, rounds = 5) {
   return best;
 }
 
+// texel's API takes space objects only; whitepoint takes objects or id
+// strings. Both whitepoint variants are shown — objects are the
+// apples-to-apples comparison, strings measure the convenience-API tax.
+import { OKLCH as wpOKLCH, sRGB as wpSRGB, Rec2020 as wpRec2020 } from '../src/index.js';
+
 console.log(`\n== conversion: oklch → srgb (${N}/run, best of 5) ==`);
-bench('whitepoint convert()', () => { for (const v of oklchVecs) convert(v, 'oklch', 'srgb', tmp); });
+bench('whitepoint convert(objects)', () => { for (const v of oklchVecs) convert(v, wpOKLCH, wpSRGB, tmp); });
+bench('whitepoint convert(strings)', () => { for (const v of oklchVecs) convert(v, 'oklch', 'srgb', tmp); });
 bench('texel convert()', () => { for (const v of oklchVecs) texel.convert(v, texel.OKLCH, texel.sRGB, tmp); });
 { const f = converter('rgb'); bench('culori converter()', () => { for (const v of culoriOklch) f(v); }); }
 
 console.log(`\n== conversion: srgb → oklch ==`);
-bench('whitepoint convert()', () => { for (const v of srgbVecs) convert(v, 'srgb', 'oklch', tmp); });
+bench('whitepoint convert(objects)', () => { for (const v of srgbVecs) convert(v, wpSRGB, wpOKLCH, tmp); });
+bench('whitepoint convert(strings)', () => { for (const v of srgbVecs) convert(v, 'srgb', 'oklch', tmp); });
 bench('texel convert()', () => { for (const v of srgbVecs) texel.convert(v, texel.sRGB, texel.OKLCH, tmp); });
 { const f = converter('oklch'); bench('culori converter()', () => { for (const v of culoriSrgb) f(v); }); }
 
 console.log(`\n== conversion: srgb → rec2020 (fused RGB↔RGB route) ==`);
-bench('whitepoint convert()', () => { for (const v of srgbVecs) convert(v, 'srgb', 'rec2020', tmp); });
+bench('whitepoint convert(objects)', () => { for (const v of srgbVecs) convert(v, wpSRGB, wpRec2020, tmp); });
+bench('whitepoint convert(strings)', () => { for (const v of srgbVecs) convert(v, 'srgb', 'rec2020', tmp); });
 bench('texel convert()', () => { for (const v of srgbVecs) texel.convert(v, texel.sRGB, texel.Rec2020, tmp); });
 { const f = converter('rec2020'); bench('culori converter()', () => { for (const v of culoriSrgb) f(v); }); }
 

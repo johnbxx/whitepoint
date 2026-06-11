@@ -102,6 +102,29 @@ function buildRgbRoute(F, T) {
 
 const TMP = [0, 0, 0];
 
+// Hot-path dispatch: no string keys, no allocation. Routes are cached on an
+// object-keyed map per source space, with a last-pair memo in front — real
+// workloads convert the same pair millions of times in a row.
+const _routeCache = new WeakMap();
+let _lastF = null, _lastT = null, _lastRoute = null;
+
+function lookupRoute(F, T) {
+  let m = _routeCache.get(F);
+  if (m === undefined) _routeCache.set(F, (m = new Map()));
+  let route = m.get(T);
+  if (route === undefined) {
+    route = routes.get(F.id + '|' + T.id);
+    if (route === undefined) {
+      route = (F.m && T.m && F.transferName !== undefined && T.transferName !== undefined)
+        ? buildRgbRoute(F, T)
+        : null; // null: use the hub
+    }
+    m.set(T, route);
+  }
+  _lastF = F; _lastT = T; _lastRoute = route;
+  return route;
+}
+
 /**
  * Convert coordinates between any two color spaces.
  *
@@ -111,22 +134,13 @@ const TMP = [0, 0, 0];
  * @param {number[]} [out] - optional output array (zero-allocation hot loops)
  */
 export function convert(coords, from, to, out = [0, 0, 0]) {
-  const F = resolve(from);
-  const T = resolve(to);
+  const F = typeof from === 'string' ? resolve(from) : from;
+  const T = typeof to === 'string' ? resolve(to) : to;
   if (F === T) {
     out[0] = coords[0]; out[1] = coords[1]; out[2] = coords[2];
     return out;
   }
-  const key = F.id + '|' + T.id;
-  let route = routes.get(key);
-  if (route === undefined) {
-    if (F.m && T.m && F.transferName !== undefined && T.transferName !== undefined) {
-      route = buildRgbRoute(F, T);
-    } else {
-      route = null; // sentinel: use the hub
-    }
-    routes.set(key, route);
-  }
-  if (route) return route(coords, out);
+  const route = (F === _lastF && T === _lastT) ? _lastRoute : lookupRoute(F, T);
+  if (route !== null) return route(coords, out);
   return T.fromXyz(F.toXyz(coords, TMP), out);
 }
