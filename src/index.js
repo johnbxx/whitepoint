@@ -25,6 +25,10 @@ export { mix, mixAlpha, hueDelta } from './ops/mix.js';
 export { serialize } from './ops/serialize.js';
 export { wcagLuminance, contrastWCAG2 } from './ops/contrast.js';
 export { deltaE2000 } from './ops/diff.js';
+export {
+  premultiply, unpremultiply, composite, overStack, blend,
+  porterDuffOperators, blendModes,
+} from './ops/composite.js';
 
 // Pixel boundary
 export { toBytes, fromBytes, toHex, fromHex } from './core/bytes.js';

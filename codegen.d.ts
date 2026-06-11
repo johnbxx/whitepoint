@@ -40,3 +40,12 @@ export function wgslMix(space: string, opts?: MixEmitOptions): string;
 
 /** Standalone JS mixer (parity-tested against the library mix in CI). */
 export function jsMix(space: string, opts?: MixEmitOptions): string;
+
+/** GLSL Porter-Duff compositor over premultiplied vec4. */
+export function glslComposite(op?: string, opts?: EmitOptions): string;
+
+/** WGSL Porter-Duff compositor. */
+export function wgslComposite(op?: string, opts?: EmitOptions): string;
+
+/** Standalone JS Porter-Duff compositor (parity-tested in CI). */
+export function jsComposite(op?: string, opts?: EmitOptions): string;

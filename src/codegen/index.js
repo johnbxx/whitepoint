@@ -246,3 +246,69 @@ export function wgslMix(space, { hue = 'shorter', name = mixName(space, hue) } =
 export function jsMix(space, { hue = 'shorter', name = mixName(space, hue) } = {}) {
   return mixSource('js', space, hue, name);
 }
+
+// ---- Shader-side compositing (Porter-Duff, premultiplied vec4) ----
+
+const PD_FACTORS = {
+  'clear':            ['0.0', '0.0'],
+  'copy':             ['1.0', '0.0'],
+  'destination':      ['0.0', '1.0'],
+  'source-over':      ['1.0', '1.0 - as'],
+  'destination-over': ['1.0 - ad', '1.0'],
+  'source-in':        ['ad', '0.0'],
+  'destination-in':   ['0.0', 'as'],
+  'source-out':       ['1.0 - ad', '0.0'],
+  'destination-out':  ['0.0', '1.0 - as'],
+  'source-atop':      ['ad', '1.0 - as'],
+  'destination-atop': ['1.0 - ad', 'as'],
+  'xor':              ['1.0 - ad', '1.0 - as'],
+  'lighter':          ['1.0', '1.0'],
+};
+
+function compositeSource(lang, op, name) {
+  const f = PD_FACTORS[op];
+  if (!f) throw new Error(`codegen: unknown Porter-Duff operator "${op}" (have: ${Object.keys(PD_FACTORS).join(', ')})`);
+  const [fsE, fdE] = f;
+  if (lang === 'js') {
+    return `function ${name}(src, dst, out = [0, 0, 0, 0]) {
+  const as = src[3], ad = dst[3];
+  const fs = ${fsE.replace(/\.0/g, '')}, fd = ${fdE.replace(/\.0/g, '')};
+  out[0] = src[0] * fs + dst[0] * fd;
+  out[1] = src[1] * fs + dst[1] * fd;
+  out[2] = src[2] * fs + dst[2] * fd;
+  out[3] = as * fs + ad * fd;
+  return out;
+}`;
+  }
+  if (lang === 'glsl') {
+    return `vec4 ${name}(vec4 src, vec4 dst) {
+  float as = src.a;
+  float ad = dst.a;
+  return src * (${fsE}) + dst * (${fdE});
+}`;
+  }
+  return `fn ${name}(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+  let as = src.w;
+  let ad = dst.w;
+  return src * (${fsE}) + dst * (${fdE});
+}`;
+}
+
+function compositeName(op) {
+  return `wp_composite_${op}`.replace(/-/g, '_');
+}
+
+/** GLSL Porter-Duff compositor over premultiplied vec4. */
+export function glslComposite(op = 'source-over', { name = compositeName(op) } = {}) {
+  return compositeSource('glsl', op, name);
+}
+
+/** WGSL Porter-Duff compositor. */
+export function wgslComposite(op = 'source-over', { name = compositeName(op) } = {}) {
+  return compositeSource('wgsl', op, name);
+}
+
+/** Standalone JS Porter-Duff compositor (parity-tested in CI). */
+export function jsComposite(op = 'source-over', { name = compositeName(op) } = {}) {
+  return compositeSource('js', op, name);
+}

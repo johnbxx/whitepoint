@@ -119,6 +119,31 @@ export function contrastWCAG2(a: ArrayLike<number>, b: ArrayLike<number>, space?
 /** CIEDE2000 color difference on CIE Lab coordinates (CIE 015; Sharma 2005). */
 export function deltaE2000(lab1: ArrayLike<number>, lab2: ArrayLike<number>, weights?: { kL?: number; kC?: number; kH?: number }): number;
 
+// ---- compositing (Porter-Duff 1984; W3C Compositing & Blending L1) ----
+
+export type PorterDuffOperator =
+  | 'clear' | 'copy' | 'destination' | 'source-over' | 'destination-over'
+  | 'source-in' | 'destination-in' | 'source-out' | 'destination-out'
+  | 'source-atop' | 'destination-atop' | 'xor' | 'lighter';
+
+export type BlendMode =
+  | 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten'
+  | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light'
+  | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
+
+/** Straight [c0,c1,c2,a] → premultiplied. */
+export function premultiply(c: ArrayLike<number>, out?: number[]): number[];
+/** Premultiplied → straight (1/alpha error amplification; alpha-0 passes channels through). */
+export function unpremultiply(c: ArrayLike<number>, out?: number[]): number[];
+/** Porter-Duff compositing of premultiplied colors. Polar spaces refused. */
+export function composite(srcP: ArrayLike<number>, dstP: ArrayLike<number>, op?: PorterDuffOperator, space?: SpaceLike, out?: number[]): number[];
+/** Source-over of a premultiplied layer stack (layers[0] on top), closed-form. */
+export function overStack(layers: ArrayLike<number>[], space?: SpaceLike, out?: number[]): number[];
+/** W3C blend-then-composite on straight-alpha colors (spec default: gamma sRGB). */
+export function blend(src: ArrayLike<number>, dst: ArrayLike<number>, mode?: BlendMode, space?: SpaceLike, out?: number[]): number[];
+export const porterDuffOperators: PorterDuffOperator[];
+export const blendModes: BlendMode[];
+
 // ---- pixel boundary (the only rounding in the library) ----
 
 export function toBytes(coords: ArrayLike<number>, out?: number[]): number[];

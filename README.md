@@ -159,6 +159,27 @@ import { glslMix, wgslMix } from 'whitepoint/codegen';
 glslMix('oklch', { hue: 'shorter' }); // vec3 wp_mix_oklch_shorter(vec3 a, vec3 b, float t)
 ```
 
+## Compositing
+
+Porter-Duff (all 13 operators) and the W3C blend modes, premultiplied-native:
+compositing's one precision sink is un-premultiplication (error amplifies as
+1/α), so the pipeline keeps colors premultiplied and divides once, at the
+boundary. `overStack` evaluates the N-layer closed form in a single
+accumulation — fewer roundings than pairwise folding, verified in CI.
+Compositing is physically meaningful in linear-light (the default); gamma
+sRGB is supported because CSS composites there; polar spaces are refused.
+
+```js
+import { premultiply, unpremultiply, composite, overStack, blend } from 'whitepoint';
+
+composite(srcP, dstP, 'source-over', 'srgb-linear'); // premultiplied in/out
+overStack([top, middle, bottom]);                    // closed-form layer stack
+blend(src, dst, 'soft-light');                       // W3C blend modes, straight alpha
+
+import { glslComposite, wgslComposite } from 'whitepoint/codegen';
+glslComposite('source-atop'); // vec4 wp_composite_source_atop(vec4 src, vec4 dst)
+```
+
 ## Scope rule and anti-goals
 
 One rule decides what belongs here: **if a frozen spec defines it on
