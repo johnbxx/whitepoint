@@ -14,7 +14,8 @@ export type SpaceId =
   | 'ictcp' | 'jzazbz' | 'jzczhz'
   | 'luv' | 'lchuv' | 'hsv' | 'hsi' | 'okhsl' | 'okhsv'
   | 'bt709' | 'dci-p3' | 'aces2065-1' | 'acescg' | 'acescc' | 'acescct'
-  | 'rec2100-pq' | 'rec2100-hlg' | 'din99o' | 'din99o-lch';
+  | 'rec2100-pq' | 'rec2100-hlg' | 'din99o' | 'din99o-lch'
+  | 'cam16' | 'cam16-ucs' | 'hct';
 
 export interface ColorSpace {
   readonly id: string;
@@ -78,6 +79,24 @@ export const Rec2100PQ: ColorSpace;
 export const Rec2100HLG: ColorSpace;
 export const DIN99o: ColorSpace;
 export const DIN99oLCH: ColorSpace;
+export const CAM16JCh: ColorSpace;
+export const CAM16UCS: ColorSpace;
+export const HCT: ColorSpace;
+
+export interface Cam16ViewingConditions {
+  fl: number; fl25: number; n: number; z: number; c: number; nc: number;
+  nbb: number; ncb: number; aw: number; rgbD: number[]; cz: number;
+}
+/** Precompute CAM16 viewing conditions (defaults = Material HCT's). */
+export function cam16ViewingConditions(opts?: {
+  white?: number[]; adaptingLuminance?: number; backgroundLstar?: number;
+  surround?: 'average' | 'dim' | 'dark'; discounting?: boolean;
+}): Cam16ViewingConditions;
+/** XYZ (Y 0–100) → CAM16 [J, C, h]. */
+export function xyzToCam16(xyz100: ArrayLike<number>, vc?: Cam16ViewingConditions, out?: Vec3): Vec3;
+/** CAM16 [J, C, h] → XYZ (Y 0–100). */
+export function cam16ToXyz(jch: ArrayLike<number>, vc?: Cam16ViewingConditions, out?: Vec3): Vec3;
+export const CAM16_DEFAULT_VC: Cam16ViewingConditions;
 
 export function hsvToSrgb(hsv: ArrayLike<number>, out?: Vec3): Vec3;
 export function srgbToHsv(rgb: ArrayLike<number>, out?: Vec3): Vec3;

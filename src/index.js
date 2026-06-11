@@ -11,6 +11,10 @@ export {
   Rec2100PQ, Rec2100HLG,
 } from './spaces/rgb.js';
 export { DIN99o, DIN99oLCH } from './spaces/din99o.js';
+export {
+  CAM16JCh, CAM16UCS, HCT,
+  cam16ViewingConditions, xyzToCam16, cam16ToXyz, CAM16_DEFAULT_VC,
+} from './spaces/cam16.js';
 export { OKLab, OKLCH, oklabToRgbDirect } from './spaces/oklab.js';
 export { Lab, LCH } from './spaces/cielab.js';
 export { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from './spaces/hsl.js';

@@ -15,6 +15,7 @@ import {
   Rec2100PQ, Rec2100HLG,
 } from '../spaces/rgb.js';
 import { DIN99o, DIN99oLCH } from '../spaces/din99o.js';
+import { CAM16JCh, CAM16UCS, HCT } from '../spaces/cam16.js';
 import { OKLab, OKLCH, oklabToRgbDirect } from '../spaces/oklab.js';
 import { Lab, LCH } from '../spaces/cielab.js';
 import { HSL, HWB, hslToSrgb, srgbToHsl, hwbToSrgb, srgbToHwb } from '../spaces/hsl.js';
@@ -62,6 +63,9 @@ export const spaces = {
   'rec2100-hlg': Rec2100HLG,
   'din99o': DIN99o,
   'din99o-lch': DIN99oLCH,
+  'cam16': CAM16JCh,
+  'cam16-ucs': CAM16UCS,
+  'hct': HCT,
 };
 
 export function resolve(space) {
