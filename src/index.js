@@ -20,6 +20,12 @@ export { cats } from './constants/cats.js';
 // Gamut
 export { inGamut, toGamut, clip, deltaEOK, findCusp, findCuspNumerical } from './gamut/index.js';
 
+// Coordinate operations (CSS Color 4 §12; WCAG 2.x; CIEDE2000)
+export { mix, mixAlpha, hueDelta } from './ops/mix.js';
+export { serialize } from './ops/serialize.js';
+export { wcagLuminance, contrastWCAG2 } from './ops/contrast.js';
+export { deltaE2000 } from './ops/diff.js';
+
 // Pixel boundary
 export { toBytes, fromBytes, toHex, fromHex } from './core/bytes.js';
 

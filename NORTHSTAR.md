@@ -30,10 +30,19 @@ it to the last digit. Stop hand-porting color matrices.
    white points differ from CIE 15 values in the fifth digit; gamut mapping is
    lossy. We document these instead of papering over them.
 
+## Scope rule
+
+**If a frozen spec defines it on coordinates, implement it exactly; strings
+on the way out only; constants still in motion wait.**
+
 ## Anti-goals
 
 - No color wrapper class — plain arrays in, plain arrays out
-- No CSS string parsing (serialization may come later)
-- No alpha channel — colorimetry doesn't have one; carry it yourself
-- No palettes, harmonies, color naming, or gradients — those belong to apps
-  (ColorPlay is the first production consumer)
+- No CSS string parsing, ever (grammar churn + `none` semantics would poison
+  the 3-channel zero-allocation contract; serialization IS in scope)
+- Alpha is not a color coordinate — the conversion core stays 3-channel;
+  spec-defined alpha interactions (premultiplied mixing, serialization) are
+  separate, consistently 4-channel entry points
+- No palettes, harmonies, color naming, or gradient objects — those belong
+  to applications (spec-defined interpolation itself is in scope)
+- No unfrozen perceptual models (APCA waits for WCAG 3 to freeze)

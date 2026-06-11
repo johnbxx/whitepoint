@@ -97,6 +97,28 @@ export function findCusp(h: number, gamut: SpaceLike): number[];
 /** Brute-force cusp via full conversions — the ground truth findCusp is verified against. */
 export function findCuspNumerical(h: number, gamut: SpaceLike): number[];
 
+// ---- coordinate operations ----
+
+export type HueMethod = 'shorter' | 'longer' | 'increasing' | 'decreasing';
+
+/** Mix two colors (both in `space`) per CSS Color 4 §12. */
+export function mix(a: ArrayLike<number>, b: ArrayLike<number>, t: number, space: SpaceLike, opts?: { hue?: HueMethod }, out?: Vec3): Vec3;
+/** Premultiplied-alpha mix per CSS Color 4 §12.3. Inputs/output are [c0, c1, c2, alpha]. */
+export function mixAlpha(a: ArrayLike<number>, b: ArrayLike<number>, t: number, space: SpaceLike, opts?: { hue?: HueMethod }, out?: number[]): number[];
+/** Hue delta per CSS Color 4 §12.4, from normalized hues. */
+export function hueDelta(ha: number, hb: number, method: HueMethod): number;
+
+/** Serialize coordinates to a CSS color string (output only — parsing is out of scope). */
+export function serialize(coords: ArrayLike<number>, space: SpaceLike, opts?: { alpha?: number; precision?: number }): string;
+
+/** WCAG 2.x relative luminance of gamma sRGB coordinates (spec-literal formula). */
+export function wcagLuminance(srgb: ArrayLike<number>): number;
+/** WCAG 2.x contrast ratio (1–21) between two colors in `space`. */
+export function contrastWCAG2(a: ArrayLike<number>, b: ArrayLike<number>, space?: SpaceLike): number;
+
+/** CIEDE2000 color difference on CIE Lab coordinates (CIE 015; Sharma 2005). */
+export function deltaE2000(lab1: ArrayLike<number>, lab2: ArrayLike<number>, weights?: { kL?: number; kC?: number; kH?: number }): number;
+
 // ---- pixel boundary (the only rounding in the library) ----
 
 export function toBytes(coords: ArrayLike<number>, out?: number[]): number[];

@@ -140,3 +140,109 @@ export function jsGamutMap(gamut, { name = gamutMapName(gamut) } = {}) {
   checkRgbGamut(gamut);
   return gamutMapSource('js', gamut, name);
 }
+
+// ---- Shader-side mixing (CSS Color 4 §12) ----
+//
+// Per-pixel interpolation in any supported space with spec hue arcs — the
+// core of gradient shaders. Coordinates must already be in `space`.
+
+const MIX_HUE_CHANNEL = { hsl: 0, hwb: 0, lch: 2, oklch: 2 };
+const HUE_METHODS = ['shorter', 'longer', 'increasing', 'decreasing'];
+
+// Hue delta in the target language, from normalized hues ha/hb (CSS §12.4).
+function hueDeltaExpr(lang, method) {
+  const MOD = lang === 'glsl' || lang === 'wgsl'
+    ? (x, m) => `mod(${x}, ${m})`
+    : (x, m) => `(((${x}) % ${m}) + ${m}) % ${m}`;
+  const d0 = `${MOD('hb - ha + 360.0', '360.0')}`;
+  switch (method) {
+    case 'shorter': return `float d0 = ${d0}; float d = d0 > 180.0 ? d0 - 360.0 : d0;`;
+    case 'longer': return `float d0 = ${d0}; float d = d0 == 0.0 ? 360.0 : (d0 < 180.0 ? d0 - 360.0 : d0);`;
+    case 'increasing': return `float d = ${d0};`;
+    case 'decreasing': return `float d0 = ${d0}; float d = d0 == 0.0 ? 0.0 : d0 - 360.0;`;
+    default: throw new Error(`codegen: unknown hue method "${method}"`);
+  }
+}
+
+function mixSource(lang, spaceId, method, name) {
+  const hc = MIX_HUE_CHANNEL[spaceId] ?? -1;
+  // Mixing is intrinsic to a space (no conversion involved), so hsl/hwb are
+  // mixable even though they have no conversion chains in codegen yet.
+  if (!codegenSpaces[spaceId] && hc === -1) throw new Error(`codegen: unsupported space "${spaceId}"`);
+  if (!HUE_METHODS.includes(method)) throw new Error(`codegen: unknown hue method "${method}"`);
+
+  const comp = ['x', 'y', 'z'];
+  const lerp = (i) => `a.${comp[i]} + t * (b.${comp[i]} - a.${comp[i]})`;
+
+  if (lang === 'js') {
+    const lines = [];
+    for (let i = 0; i < 3; i++) {
+      if (i === hc) {
+        lines.push(
+          `  const ha = ((a[${i}] % 360) + 360) % 360;`,
+          `  const hb = ((b[${i}] % 360) + 360) % 360;`,
+          `  ${hueDeltaExpr('js', method).replace(/float /g, 'const ').replace(/const d0/, 'const d0').replace('const d =', 'const d =')}`,
+          `  out[${i}] = (((ha + t * d) % 360) + 360) % 360;`,
+        );
+      } else {
+        lines.push(`  out[${i}] = a[${i}] + t * (b[${i}] - a[${i}]);`);
+      }
+    }
+    return `function ${name}(a, b, t, out = [0, 0, 0]) {\n${lines.join('\n')}\n  return out;\n}`;
+  }
+
+  if (hc === -1) {
+    if (lang === 'glsl') return `vec3 ${name}(vec3 a, vec3 b, float t) {\n  return mix(a, b, t);\n}`;
+    return `fn ${name}(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {\n  return mix(a, b, t);\n}`;
+  }
+
+  const nonHue = [0, 1, 2].filter((i) => i !== hc);
+  if (lang === 'glsl') {
+    return `vec3 ${name}(vec3 a, vec3 b, float t) {
+  float ha = mod(mod(a.${comp[hc]}, 360.0) + 360.0, 360.0);
+  float hb = mod(mod(b.${comp[hc]}, 360.0) + 360.0, 360.0);
+  ${hueDeltaExpr('glsl', method)}
+  vec3 v;
+  v.${comp[nonHue[0]]} = ${lerp(nonHue[0])};
+  v.${comp[nonHue[1]]} = ${lerp(nonHue[1])};
+  v.${comp[hc]} = mod(ha + t * d, 360.0);
+  return v;
+}`;
+  }
+  // WGSL: no ternary — rewrite hue delta with select()
+  const wgslDelta = {
+    shorter: `let d0 = (hb - ha + 360.0) % 360.0; let d = select(d0, d0 - 360.0, d0 > 180.0);`,
+    longer: `let d0 = (hb - ha + 360.0) % 360.0; let d = select(select(d0, d0 - 360.0, d0 < 180.0), 360.0, d0 == 0.0);`,
+    increasing: `let d = (hb - ha + 360.0) % 360.0;`,
+    decreasing: `let d0 = (hb - ha + 360.0) % 360.0; let d = select(d0 - 360.0, 0.0, d0 == 0.0);`,
+  }[method];
+  return `fn ${name}(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+  let ha = ((a.${comp[hc]} % 360.0) + 360.0) % 360.0;
+  let hb = ((b.${comp[hc]} % 360.0) + 360.0) % 360.0;
+  ${wgslDelta}
+  var v: vec3<f32>;
+  v.${comp[nonHue[0]]} = ${lerp(nonHue[0])};
+  v.${comp[nonHue[1]]} = ${lerp(nonHue[1])};
+  v.${comp[hc]} = (ha + t * d) % 360.0;
+  return v;
+}`;
+}
+
+function mixName(spaceId, method) {
+  return `wp_mix_${spaceId}_${method}`.replace(/-/g, '_');
+}
+
+/** GLSL mixer for a space with a CSS Color 4 hue interpolation method. */
+export function glslMix(space, { hue = 'shorter', name = mixName(space, hue) } = {}) {
+  return mixSource('glsl', space, hue, name);
+}
+
+/** WGSL mixer. */
+export function wgslMix(space, { hue = 'shorter', name = mixName(space, hue) } = {}) {
+  return mixSource('wgsl', space, hue, name);
+}
+
+/** Standalone JS mixer (parity-tested against the library mix in CI). */
+export function jsMix(space, { hue = 'shorter', name = mixName(space, hue) } = {}) {
+  return mixSource('js', space, hue, name);
+}

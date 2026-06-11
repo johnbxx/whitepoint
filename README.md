@@ -140,10 +140,41 @@ equivalent), object-keyed route caching with a last-pair memo (no string
 keys, no allocation in dispatch), and exact cubic structure exploited
 wherever others fit approximations.
 
-## Anti-goals
+## Coordinate operations
 
-No color wrapper class. No CSS string parsing. No alpha. No palettes or
-gradients — those belong to applications. Plain arrays in, plain arrays out.
+```js
+import { mix, mixAlpha, serialize, contrastWCAG2, deltaE2000, deltaEOK } from 'whitepoint';
+
+mix(a, b, 0.5, 'oklch', { hue: 'longer' });   // CSS Color 4 §12, all four hue arcs
+mixAlpha([1,0,0,0], [0,0,1,1], 0.5, 'srgb');  // premultiplied per §12.3 (4-channel form)
+serialize([0.7, 0.15, 250], 'oklch', { alpha: 0.5 }); // 'oklch(0.7 0.15 250 / 0.5)'
+contrastWCAG2(fg, bg, 'srgb');                // WCAG 2.x, spec-literal formula
+deltaE2000(lab1, lab2);                       // CIEDE2000 (CIE 015 / Sharma 2005)
+```
+
+Shader-side mixing too — gradient math in any space, on the GPU:
+
+```js
+import { glslMix, wgslMix } from 'whitepoint/codegen';
+glslMix('oklch', { hue: 'shorter' }); // vec3 wp_mix_oklch_shorter(vec3 a, vec3 b, float t)
+```
+
+## Scope rule and anti-goals
+
+One rule decides what belongs here: **if a frozen spec defines it on
+coordinates, we implement it exactly; strings are supported on the way out
+only; constants still in motion wait.**
+
+In by the rule: conversions, adaptation, gamut mapping, interpolation
+(including premultiplied alpha — the one place alpha has defined coordinate
+semantics), serialization, WCAG 2 contrast, deltaE. Out by the rule: CSS
+string *parsing* (a grammar problem with churning specs and `none` semantics
+that would poison the 3-channel zero-allocation core — parse with culori and
+pass the arrays here), and APCA/WCAG 3 contrast (returns when its constants
+freeze). Out by judgment: color wrapper classes, palettes, gradient objects
+— those belong to applications. Alpha is not a color coordinate: the
+conversion core is and stays 3-channel; alpha-aware operations are separate,
+consistently 4-channel entry points.
 
 ## License
 
