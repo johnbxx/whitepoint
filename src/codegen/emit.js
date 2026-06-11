@@ -155,11 +155,13 @@ function buildHelpers(lang) {
   };
 }
 
-const HELPERS = {
+export const HELPERS = {
   js: buildHelpers('js'),
   glsl: buildHelpers('glsl'),
   wgsl: buildHelpers('wgsl'),
 };
+
+export { fmt };
 
 // ---- per-op statement renderers ----
 

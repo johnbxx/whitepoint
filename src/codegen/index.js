@@ -7,6 +7,9 @@
 
 import { codegenSpaces } from './ops.js';
 import { fuseOps, emitFunction } from './emit.js';
+import { specialSource, specialPairs } from './special.js';
+
+export { specialPairs };
 
 function chainFor(from, to) {
   const F = codegenSpaces[from];
@@ -22,17 +25,17 @@ function fnName(from, to) {
 
 /** GLSL ES 3.00 source for a from→to conversion (declare `precision highp float;`). */
 export function glsl(from, to, { name = fnName(from, to) } = {}) {
-  return emitFunction(chainFor(from, to), name, 'glsl');
+  return specialSource('glsl', from, to, name) ?? emitFunction(chainFor(from, to), name, 'glsl');
 }
 
 /** WGSL source for a from→to conversion. */
 export function wgsl(from, to, { name = fnName(from, to) } = {}) {
-  return emitFunction(chainFor(from, to), name, 'wgsl');
+  return specialSource('wgsl', from, to, name) ?? emitFunction(chainFor(from, to), name, 'wgsl');
 }
 
 /** JavaScript source for a standalone, dependency-free from→to function. */
 export function js(from, to, { name = fnName(from, to) } = {}) {
-  return emitFunction(chainFor(from, to), name, 'js');
+  return specialSource('js', from, to, name) ?? emitFunction(chainFor(from, to), name, 'js');
 }
 
 /** Space ids available to the codegen pipeline. */
