@@ -1,0 +1,1 @@
+{"source": "colour-science 0.4.7", "generator": "tools/build-quality-oracle.py", "rows": [{"name": "FL2", "Ra": 64.234, "Rf": 70.121, "Rg": 86.416}, {"name": "FL7", "Ra": 90.212, "Rf": 91.474, "Rg": 98.897}, {"name": "FL11", "Ra": 82.859, "Rf": 80.04, "Rg": 101.057}, {"name": "A", "Ra": 99.996, "Rf": 100.0, "Rg": 100.0}, {"name": "D65", "Ra": 100.0, "Rf": 100.0, "Rg": 100.0}]}
