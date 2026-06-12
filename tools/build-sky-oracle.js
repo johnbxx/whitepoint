@@ -6,7 +6,7 @@
 //
 // Usage: node tools/build-sky-oracle.js   (requires cc in PATH)
 
-import { writeFileSync, mkdtempSync, cpSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -69,6 +69,7 @@ const fixture = {
   // rows: [elevIdx, turbIdx, albIdx, viewIdx, wlIdx, radiance W·m⁻²·sr⁻¹·nm⁻¹]
   rows,
 };
+mkdirSync(new URL('../test/fixtures/', import.meta.url), { recursive: true });
 writeFileSync(new URL('../test/fixtures/hosek-oracle.json', import.meta.url),
   JSON.stringify(fixture));
 console.log(`oracle fixture: ${rows.length} reference radiances`);
