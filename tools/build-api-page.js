@@ -138,6 +138,7 @@ const html = `<!doctype html>
   <a class="brand" href="./index.html">whitepoint</a>
   <div class="navlinks">
     <a href="./index.html">demos</a>
+    <a href="./convert.html">convert</a>
     <a href="./light.html">light lab</a>
     <a href="./accuracy.html">accuracy</a>
     <a href="./recipes.html">recipes</a>
