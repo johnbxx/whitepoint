@@ -4,7 +4,9 @@ the reference implementation of CIE 13.3 CRI and CIE 224:2017 / TM-30.
 The fixture lets `npm test` verify whitepoint's quality metrics against
 colour-science without requiring Python at test time.
 
-Usage:  pip install colour-science && python3 tools/build-quality-oracle.py
+Usage:  python3 -m pip install colour-science && python3 tools/build-quality-oracle.py
+(use `python3 -m pip`, not bare `pip` — they can resolve to different
+interpreters, and the module must land in the one that runs the script)
 """
 
 import json

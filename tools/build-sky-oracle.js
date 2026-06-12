@@ -90,7 +90,10 @@ int main(void) {
 writeFileSync(join(work, 'main.c'), main);
 execFileSync('cc', ['-O0', '-o', join(work, 'oracle'), join(work, 'main.c'), join(work, 'ArHosekSkyModel.c'), '-lm'], { stdio: 'inherit' });
 const raw = execFileSync(join(work, 'oracle'), { encoding: 'utf8', maxBuffer: 1 << 26 });
-const arrays = raw.trim().split('\n]\n').filter(Boolean).map((s) => JSON.parse(s.endsWith(']') ? s : s + '\n]'));
+// each emitted array ends with "\n]\n", so the split strips every closing
+// bracket — append it back unconditionally (a data row's own trailing "]"
+// must not be mistaken for the array's)
+const arrays = raw.split('\n]\n').filter((s) => s.trim()).map((s) => JSON.parse(s + '\n]'));
 const [rows, solarRows] = arrays;
 
 const fixture = {
