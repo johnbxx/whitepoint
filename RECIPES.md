@@ -201,14 +201,15 @@ for (const px of pixels) {
 }
 ```
 
-## CSS string parsing (interop, on purpose)
+## CSS strings in, CSS strings out
 
 ```js
-// whitepoint refuses input parsing by design (grammar churn, `none`
-// semantics). The one-liner interop:
-import { parse } from 'culori';
-const { r, g, b } = parse('oklch(70% 0.15 250deg)') /* culori converts */;
-// …or keep coords in whitepoint arrays from the start.
+import { parse, parseTo, serialize } from 'whitepoint';
+parseTo('#ff8800', 'oklch');               // hex straight to coordinates
+parse('oklch(70% 0.15 250deg)');           // { space, coords, alpha } | null
+parse('rebeccapurple');                    // all 148 named colors
+serialize(coords, 'oklch');                // and back out
+// parse(serialize(c)) round-trips; bad strings return null, never throw
 ```
 
 ## Underwater color at depth

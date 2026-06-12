@@ -38,8 +38,12 @@ on the way out only; constants still in motion wait.**
 ## Anti-goals
 
 - No color wrapper class — plain arrays in, plain arrays out
-- No CSS string parsing, ever (grammar churn + `none` semantics would poison
-  the 3-channel zero-allocation contract; serialization IS in scope)
+- ~~No CSS string parsing, ever~~ — **amended at v0.8**: purity is an
+  instrument, not an identity. Strings are how colors arrive in the world,
+  so the frozen Level 4 grammar is in scope — behind a fenced boundary
+  (src/parse): the conversion core never sees a string, `none` becomes NaN
+  under the numerical policy, and still-moving grammar (Level 5 relative
+  color syntax) waits like every other unfrozen spec
 - Alpha is not a color coordinate — the conversion core stays 3-channel;
   spec-defined alpha interactions (premultiplied mixing, serialization) are
   separate, consistently 4-channel entry points

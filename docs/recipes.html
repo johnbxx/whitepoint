@@ -177,12 +177,13 @@ for (const px of pixels) {
   convert(px, OKLCH, sRGB, out);   // space OBJECTS + out array: 47 ns, 0 B
   write(out);
 }</pre>
-<h2>CSS string parsing (interop, on purpose)</h2>
-<pre>// whitepoint refuses input parsing by design (grammar churn, `none`
-// semantics). The one-liner interop:
-import { parse } from 'culori';
-const { r, g, b } = parse('oklch(70% 0.15 250deg)') /* culori converts */;
-// …or keep coords in whitepoint arrays from the start.</pre>
+<h2>CSS strings in, CSS strings out</h2>
+<pre>import { parse, parseTo, serialize } from 'whitepoint';
+parseTo('#ff8800', 'oklch');               // hex straight to coordinates
+parse('oklch(70% 0.15 250deg)');           // { space, coords, alpha } | null
+parse('rebeccapurple');                    // all 148 named colors
+serialize(coords, 'oklch');                // and back out
+// parse(serialize(c)) round-trips; bad strings return null, never throw</pre>
 <h2>Underwater color at depth</h2>
 <pre>import { D65_SPD, WATER_ABSORPTION, attenuate, reflectanceToXyz, reflectanceOf }
   from 'whitepoint/spectral';

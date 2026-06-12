@@ -4,6 +4,23 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (none have needed to yet — the API audit before 0.7.0 found
 no renames worth their churn).
 
+## 0.8.0 — 2026-06-12
+
+The string boundary opens — by decision, not drift.
+
+- **`parse(str)` and `parseTo(str, to)` in the core entry**: the frozen
+  CSS Color 4 `<color>` grammar — hex, the 148 named colors (generated
+  from the W3C spec source), every Level 4 functional form in modern and
+  legacy syntax, `color()` with predefined + CSS HDR draft ids. Normalized
+  to library conventions; `none` → NaN under the numerical policy; null on
+  unparseable input (a bad string is data, not an error); never throws.
+  `parse ∘ serialize` round-trips in CI across every serializable space.
+  Level 5 relative color syntax and calc() wait, like every unfrozen spec.
+- The "no CSS parsing, ever" anti-goal is formally amended in NORTHSTAR:
+  purity is an instrument, not an identity. The conversion core still
+  never sees a string — the boundary is a fenced module that tree-shakes
+  away if unused.
+
 ## 0.7.0 — 2026-06-12
 
 Pre-1.0 hardening.

@@ -3,6 +3,7 @@
 
 // Conversion engine
 export { convert, convertBuffer, spaces, resolve, registerRoute } from './core/convert.js';
+export { parse, parseTo, NAMED_COLORS } from './parse/index.js';
 
 // Space objects (tree-shakeable direct use: sRGB.toXyz(c, out) …)
 export {

@@ -1,5 +1,6 @@
-// CSS string serialization (output only — input parsing is a permanent
-// anti-goal; parse with a parser library and convert here).
+// CSS string serialization — the output half of the string boundary
+// (input is src/parse; the two are round-trip-tested against each other
+// in test/parse.test.js).
 //
 // Forms follow CSS Color 4 serialization conventions: dedicated functional
 // notation where one exists (rgb/hsl/hwb/lab/lch/oklab/oklch), color() for

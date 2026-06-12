@@ -54,11 +54,19 @@ generated from the source JSDoc at build time, so it cannot drift. Two entry poi
 Every function takes an optional `out` array for zero-allocation hot loops.
 
 ```js
-import { convert, OKLCH, sRGB } from 'whitepoint';
+import { convert, parse, parseTo, serialize, OKLCH, sRGB } from 'whitepoint';
 
+parseTo('#ff8800', 'oklch');                       // CSS string in, coords out
 convert([0.7, 0.15, 250], 'oklch', 'display-p3');  // by id
+serialize([0.7, 0.15, 250], 'oklch');              // 'oklch(0.7 0.15 250)'
 OKLCH.toXyz([0.7, 0.15, 250], out);                // tree-shakeable, zero-alloc
 ```
+
+CSS Color 4 strings parse at the front door — hex, all 148 named colors,
+every Level 4 functional form, `none` handled honestly (NaN under the
+numerical policy), null on bad input, and `parse ∘ serialize` round-trips
+in CI. The conversion core itself never sees a string; the boundary is a
+fenced module that tree-shakes away if unused.
 
 | family | spaces |
 |---|---|

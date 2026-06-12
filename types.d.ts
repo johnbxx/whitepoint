@@ -50,6 +50,24 @@ export function convertBuffer(
 ): number[] | Float32Array | Float64Array;
 
 export function convert(coords: ArrayLike<number>, from: SpaceLike, to: SpaceLike, out?: Vec3): Vec3;
+
+/** A parsed CSS color: registry space, library-convention coordinates, alpha. */
+export interface ParsedColor {
+  space: SpaceId;
+  coords: Vec3;
+  alpha: number;
+}
+/**
+ * Parse a CSS Color 4 <color> string (hex, the 148 named colors,
+ * rgb/hsl/hwb/lab/lch/oklab/oklch in modern + legacy forms, color()).
+ * Returns null on unparseable input; `none` components become NaN.
+ */
+export function parse(str: string): ParsedColor | null;
+/** Parse a CSS color string straight to coordinates in `to` (alpha dropped). */
+export function parseTo(str: string, to: SpaceLike, out?: Vec3): Vec3 | null;
+/** The 148 CSS named colors (CSS Color 4 §6.1), name → #rrggbb. */
+export const NAMED_COLORS: Record<string, string>;
+
 export function resolve(space: SpaceLike): ColorSpace;
 export function registerRoute(fromId: string, toId: string, fn: (coords: ArrayLike<number>, out?: Vec3) => Vec3): void;
 export const spaces: Record<SpaceId, ColorSpace>;

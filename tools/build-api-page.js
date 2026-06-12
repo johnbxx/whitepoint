@@ -44,10 +44,11 @@ const spaceObjects = new Set(
 
 const GROUPS = [
   ['Conversions', 'whitepoint', ['convert', 'convertBuffer', 'resolve', 'registerRoute', 'spaces', 'makeYCbCr', 'oklabToRgbDirect']],
+  ['CSS strings', 'whitepoint', ['parse', 'parseTo', 'NAMED_COLORS', 'serialize']],
   ['Bytes & hex', 'whitepoint', ['toBytes', 'fromBytes', 'toHex', 'fromHex']],
   ['Illuminants & adaptation', 'whitepoint', ['adapt', 'adaptMatrix', 'illuminants', 'illuminantFromCCT', 'daylightXy', 'cats', 'xyToXyz', 'CSS_D50', 'CSS_D65', 'CSS_D50_XYZ', 'CSS_D65_XYZ']],
   ['Gamut', 'whitepoint', ['toGamut', 'inGamut', 'clip', 'findCusp', 'findCuspNumerical', 'maxChromaAt', 'deltaEOK']],
-  ['Mixing & difference', 'whitepoint', ['mix', 'mixAlpha', 'hueDelta', 'deltaE2000', 'deltaECAM16', 'serialize', 'contrastWCAG2', 'wcagLuminance']],
+  ['Mixing & difference', 'whitepoint', ['mix', 'mixAlpha', 'hueDelta', 'deltaE2000', 'deltaECAM16', 'contrastWCAG2', 'wcagLuminance']],
   ['Compositing & blending', 'whitepoint', ['composite', 'overStack', 'premultiply', 'unpremultiply', 'porterDuffOperators', 'blend', 'blendModes']],
   ['Appearance (CAM16)', 'whitepoint', ['cam16ViewingConditions', 'xyzToCam16', 'cam16ToXyz', 'CAM16_DEFAULT_VC']],
   ['Device boundaries', 'whitepoint', ['cmykFromSrgb', 'srgbFromCmyk', 'ansi16FromSrgb', 'ansi256FromSrgb', 'srgbFromAnsi256']],

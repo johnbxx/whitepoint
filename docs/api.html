@@ -130,6 +130,28 @@ precomposed at build time. This is the hot path for rendering work: one
 </section>
 
 <section>
+  <h3>CSS strings <span class="mod">whitepoint</span></h3>
+  <article id="parse"><h4><code>parse</code> <span class="src">parse/index.js</span></h4><p>Parse a CSS Color 4 &lt;color&gt; string to registry coordinates.
+Returns <code>{ space, coords, alpha }</code> normalized to library conventions,
+or <b>null</b> if the string doesn't parse — a bad string is data, not an
+error. <code>none</code> components come back as NaN (they flow safely; see the
+numerical policy). Accepts hex, the 148 named colors + <code>transparent</code>,
+all Level 4 functional forms (modern and legacy comma syntax), and
+<code>color()</code> with the predefined + CSS HDR draft space ids. Relative color
+syntax (Level 5) and calc() are out of scope.</p><p><br><code class="prm">str</code> <span class="typ">string</span> 
+<br><b>returns</b> <span class="typ">{{space: string, coords: number[], alpha: number}</span>  | null}</p></article>
+<article id="parseTo"><h4><code>parseTo</code> <span class="src">parse/index.js</span></h4><p>Parse a CSS color string straight to coordinates in <code>to</code> — the
+one-liner: <code>parseTo('#ff8800', 'oklch')</code>. Alpha is dropped (use parse()
+when you need it). Returns null if the string doesn't parse.</p><p><br><code class="prm">str</code> <span class="typ">string</span> 
+<br><code class="prm">to</code> <span class="typ">object|string</span> destination space (object or id)
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="NAMED_COLORS"><h4><code>NAMED_COLORS</code> <span class="src">parse/named.js</span></h4><p>The 148 CSS named colors (CSS Color 4 §6.1), name → #rrggbb.</p></article>
+<article id="serialize"><h4><code>serialize</code> <span class="src">ops/serialize.js</span></h4><p>Serialize coordinates in <code>space</code> to a CSS color string.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> 
+<br><code class="prm">space</code> <span class="typ">object|string</span> 
+@param {{alpha?: number, precision?: number}} [opts]</p></article>
+</section>
+
+<section>
   <h3>Bytes & hex <span class="mod">whitepoint</span></h3>
   <article id="toBytes"><h4><code>toBytes</code> <span class="src">core/bytes.js</span></h4><p>0–1 float channels → 0–255 integers (clamped, rounded).</p></article>
 <article id="fromBytes"><h4><code>fromBytes</code> <span class="src">core/bytes.js</span></h4><p>0–255 integers → 0–1 float channels.</p></article>
@@ -218,9 +240,6 @@ When the interpolated alpha is 0, coordinates interpolate unweighted
 CAM16-UCS under the default viewing conditions.</p><p><br><code class="prm">a</code> <span class="typ">number[]</span> coordinates in <code>space</code>
 <br><code class="prm">b</code> <span class="typ">number[]</span> coordinates in <code>space</code>
 <br><code class="prm">[space]</code> <span class="typ">object|string</span> the space a and b are expressed in</p></article>
-<article id="serialize"><h4><code>serialize</code> <span class="src">ops/serialize.js</span></h4><p>Serialize coordinates in <code>space</code> to a CSS color string.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> 
-<br><code class="prm">space</code> <span class="typ">object|string</span> 
-@param {{alpha?: number, precision?: number}} [opts]</p></article>
 <article id="contrastWCAG2"><h4><code>contrastWCAG2</code> <span class="src">ops/contrast.js</span></h4><p>WCAG 2.x contrast ratio (1–21) between two colors in <code>space</code>.
 WCAG is defined on sRGB; other spaces are converted (and clipped — WCAG
 has no notion of out-of-gamut color).</p></article>
