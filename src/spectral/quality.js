@@ -16,6 +16,7 @@ import {
   CMF_1931_2, CMF_1964_10, sampleSpd, emissionToXyz, spectrumXy,
   planckianSPD, daylightSPD, cctOf,
 } from './index.js';
+import { CMF_1931_2_1NM } from './data-1nm.js';
 import { TCS_CIE1995 } from './data-tcs.js';
 import { CES_CIE2017 } from './data-ces.js';
 
@@ -70,8 +71,11 @@ const dKD = (u, v) => (1.708 * v + 0.404 - 1.481 * u) / v;
  */
 export function cri(spd) {
   const { cct, duv } = cctOf(spectrumXy(spd));
-  const ref = cct < 5000 ? planckianSPD(cct) : daylightSPD(Math.min(cct, 25000));
-  const cmf = CMF_1931_2;
+  const ref = cct < 5000 ? planckianSPD(cct, { step: 1 }) : daylightSPD(Math.min(cct, 25000));
+  // the 1 nm CMFs: F-series-style line+phosphor spectra are exactly what
+  // the abridged 5 nm tables mis-integrate (measured: 3–5× the residual
+  // against colour-science's 1 nm-practice computation)
+  const cmf = CMF_1931_2_1NM;
 
   const wt = uv1960(whiteXyz(spd, cmf));
   const wr = uv1960(whiteXyz(ref, cmf));

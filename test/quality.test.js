@@ -28,9 +28,11 @@ test('CIECAM02 reproduces the CIE 159:2004 worked example', () => {
 });
 
 test('CRI of a reference illuminant is 100 by construction', () => {
-  const { Ra, Ri } = cri(planckianSPD(2856));
-  assert.ok(Math.abs(Ra - 100) < 1e-6, `Planckian Ra ${Ra}`);
-  assert.ok(Ri.every((r) => Math.abs(r - 100) < 1e-6));
+  // same 1 nm grid as the reference cri() builds internally — the
+  // construction holds only when test and reference share a representation
+  const { Ra, Ri } = cri(planckianSPD(2856, { step: 1 }));
+  assert.ok(Math.abs(Ra - 100) < 1e-4, `Planckian Ra ${Ra}`);
+  assert.ok(Ri.every((r) => Math.abs(r - 100) < 1e-4));
   // daylight: cctOf solves ~6502 for the 6504 synthesis — sub-0.5 wiggle
   assert.ok(cri(daylightSPD(6504)).Ra > 99.5, `D65 Ra ${cri(daylightSPD(6504)).Ra}`);
 });
@@ -84,9 +86,12 @@ test('agreement with python colour-science',
     const SPDS = { FL2: FL2_SPD, FL7: FL7_SPD, FL11: FL11_SPD, A: illuminantASPD(), D65: daylightSPD(6504) };
     for (const { name, Ra, Rf, Rg } of rows) {
       const ours = { Ra: cri(SPDS[name]).Ra, ...tm30(SPDS[name]) };
-      // tolerance covers 5 nm CES vs the oracle's 1 nm + interpolation policy
-      assert.ok(Math.abs(ours.Ra - Ra) < 1.0, `${name} Ra ${ours.Ra} vs oracle ${Ra}`);
-      assert.ok(Math.abs(ours.Rf - Rf) < 1.0, `${name} Rf ${ours.Rf} vs oracle ${Rf}`);
-      assert.ok(Math.abs(ours.Rg - Rg) < 1.5, `${name} Rg ${ours.Rg} vs oracle ${Rg}`);
+      // measured agreement: Rf/Rg ≤ 0.002, Ra ≤ 0.027 (the residual is
+      // linear-vs-Sprague interpolation flavor, far below the metrics'
+      // integer-published precision). Tolerances sit just above so any
+      // regression from today's agreement fails loudly.
+      assert.ok(Math.abs(ours.Ra - Ra) < 0.05, `${name} Ra ${ours.Ra} vs oracle ${Ra}`);
+      assert.ok(Math.abs(ours.Rf - Rf) < 0.01, `${name} Rf ${ours.Rf} vs oracle ${Rf}`);
+      assert.ok(Math.abs(ours.Rg - Rg) < 0.01, `${name} Rg ${ours.Rg} vs oracle ${Rg}`);
     }
   });
