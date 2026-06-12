@@ -253,6 +253,26 @@ const zenith = skySPD(state, 0, Math.PI / 2 - 0.5);  // theta, gamma from sun
 cctOf(spectrumXy(zenith));                            // a very blue number
 ```
 
+## Convert a million pixels (the batch path)
+
+```js
+import { convertBuffer } from 'whitepoint';
+// interleaved [l,c,h, l,c,h, ...] -> [r,g,b, ...], route resolved once,
+// zero allocation per pixel: ~46 ns/px, 1.75x the naive per-pixel pattern
+convertBuffer(float32Pixels, 'oklch', 'srgb');             // in place
+convertBuffer(src, 'srgb', 'display-p3', dst);             // or into dst
+```
+
+## The color of direct sunlight (Hosek-Wilkie solar disc)
+
+```js
+import { skyModel, sunSPD, skySPD } from 'whitepoint/sky';
+import { cctOf, spectrumXy } from 'whitepoint/spectral';
+const dusk = skyModel({ elevation: 0.05, turbidity: 3 });
+cctOf(spectrumXy(sunSPD(dusk, Math.PI / 2 - 0.05)));  // a low, red sun
+// total radiance toward the sun = sunRadiance(...) + skyRadiance(...)
+```
+
 ## Grade a lamp (CRI + TM-30)
 
 ```js

@@ -16,6 +16,7 @@
 // (0 outside, with the reference's linear fade above 720).
 
 import { SKY_WL, SKY_DATASETS, SKY_RADIANCES } from './data.js';
+import { SOLAR_DATASETS, LIMB_DARKENING } from './data-solar.js';
 
 export { SKY_WL };
 
@@ -125,6 +126,85 @@ export function skySPD(state, theta, gamma, { start = 320, step = 5, end = 720 }
   const values = new Array(n);
   for (let i = 0; i < n; i++) {
     values[i] = skyRadiance(state, theta, gamma, start + i * step);
+  }
+  return { start, step, values };
+}
+
+// ---- the solar disc (reference v1.4a solar radiance function) ----
+
+const SOLAR_RADIUS = (0.51 * Math.PI / 180) / 2; // terrestrial, radians
+const PIECES = 45, ORDER = 4;
+
+// piecewise cubic in cube-root-transformed elevation; exact port of the
+// reference's backward-reading coefficient walk
+function srInternal(data, turb0, elevation) {
+  let pos = Math.trunc(Math.pow(2 * elevation / Math.PI, 1 / 3) * PIECES);
+  if (pos > 44) pos = 44;
+  const breakX = Math.pow(pos / PIECES, 3) * (Math.PI * 0.5);
+  let off = ORDER * PIECES * turb0 + ORDER * (pos + 1) - 1;
+  const x = elevation - breakX;
+  let res = 0, xExp = 1;
+  for (let i = 0; i < ORDER; i++) {
+    res += xExp * data[off--];
+    xExp *= x;
+  }
+  return res;
+}
+
+/**
+ * Direct radiance of the solar disc itself, W·m⁻²·sr⁻¹·nm⁻¹ — zero
+ * outside the disc (angular radius 0.255°), limb-darkened within it
+ * (the sun is visibly dimmer and warmer at its edge; the model carries
+ * the astronomical 5th-order fit per band). The reference's
+ * `solar_radiance` is this plus skyRadiance — add them for a view that
+ * includes both the disc and the in-scattered sky.
+ *
+ * @param {object} state - from skyModel()
+ * @param {number} theta - view zenith angle, radians
+ * @param {number} gamma - angular distance from the sun's center, radians
+ * @param {number} wavelength - nm (320–720; 0 outside)
+ */
+export function sunRadiance(state, theta, gamma, wavelength) {
+  if (wavelength < 320 || wavelength > 720) return 0;
+  // disc test: sampleCosine = cos of the angle at the solar surface
+  const sinR = Math.sin(SOLAR_RADIUS);
+  const sinG = Math.sin(gamma);
+  const sc2 = 1 - (sinG * sinG) / (sinR * sinR);
+  if (sc2 <= 0) return 0;
+  const sampleCosine = Math.sqrt(sc2);
+
+  const elevation = Math.PI / 2 - theta; // the reference evaluates at the VIEW's elevation
+  let turbLow = Math.trunc(state.turbidity) - 1;
+  let turbFrac = state.turbidity - (turbLow + 1);
+  if (turbLow === 9) { turbLow = 8; turbFrac = 1; }
+  let wlLow = Math.trunc((wavelength - 320) / 40);
+  let wlFrac = (wavelength % 40) / 40;
+  if (wlLow === 10) { wlLow = 9; wlFrac = 1; }
+
+  const direct =
+    (1 - turbFrac) * ((1 - wlFrac) * srInternal(SOLAR_DATASETS[wlLow], turbLow, elevation)
+      + wlFrac * srInternal(SOLAR_DATASETS[wlLow + 1], turbLow, elevation))
+    + turbFrac * ((1 - wlFrac) * srInternal(SOLAR_DATASETS[wlLow], turbLow + 1, elevation)
+      + wlFrac * srInternal(SOLAR_DATASETS[wlLow + 1], turbLow + 1, elevation));
+
+  let darkening = 0, cExp = 1;
+  for (let i = 0; i < 6; i++) {
+    darkening += ((1 - wlFrac) * LIMB_DARKENING[wlLow][i] + wlFrac * LIMB_DARKENING[wlLow + 1][i]) * cExp;
+    cExp *= sampleCosine;
+  }
+  return direct * darkening;
+}
+
+/**
+ * The direct sun's SPD for a view direction (disc only — add skySPD for
+ * the total). Default gamma 0 looks at the disc's center: the color of
+ * direct sunlight through this atmosphere.
+ */
+export function sunSPD(state, theta, gamma = 0, { start = 320, step = 5, end = 720 } = {}) {
+  const n = Math.round((end - start) / step) + 1;
+  const values = new Array(n);
+  for (let i = 0; i < n; i++) {
+    values[i] = sunRadiance(state, theta, gamma, start + i * step);
   }
   return { start, step, values };
 }

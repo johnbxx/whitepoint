@@ -208,6 +208,18 @@ import { spectrumXy, cctOf } from 'whitepoint/spectral';
 const state = skyModel({ elevation: 0.5, turbidity: 3, albedo: 0.1 });
 const zenith = skySPD(state, 0, Math.PI / 2 - 0.5);  // theta, gamma from sun
 cctOf(spectrumXy(zenith));                            // a very blue number</pre>
+<h2>Convert a million pixels (the batch path)</h2>
+<pre>import { convertBuffer } from 'whitepoint';
+// interleaved [l,c,h, l,c,h, ...] -&gt; [r,g,b, ...], route resolved once,
+// zero allocation per pixel: ~46 ns/px, 1.75x the naive per-pixel pattern
+convertBuffer(float32Pixels, 'oklch', 'srgb');             // in place
+convertBuffer(src, 'srgb', 'display-p3', dst);             // or into dst</pre>
+<h2>The color of direct sunlight (Hosek-Wilkie solar disc)</h2>
+<pre>import { skyModel, sunSPD, skySPD } from 'whitepoint/sky';
+import { cctOf, spectrumXy } from 'whitepoint/spectral';
+const dusk = skyModel({ elevation: 0.05, turbidity: 3 });
+cctOf(spectrumXy(sunSPD(dusk, Math.PI / 2 - 0.05)));  // a low, red sun
+// total radiance toward the sun = sunRadiance(...) + skyRadiance(...)</pre>
 <h2>Grade a lamp (CRI + TM-30)</h2>
 <pre>import { cri, tm30, FL2_SPD } from 'whitepoint/spectral';
 const { Ra, Ri } = cri(FL2_SPD);     // CIE 13.3: Ra 64, R9 (strong red) -84

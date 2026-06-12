@@ -2,7 +2,7 @@
 // Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.
 
 // Conversion engine
-export { convert, spaces, resolve, registerRoute } from './core/convert.js';
+export { convert, convertBuffer, spaces, resolve, registerRoute } from './core/convert.js';
 
 // Space objects (tree-shakeable direct use: sRGB.toXyz(c, out) …)
 export {

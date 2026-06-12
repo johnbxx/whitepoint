@@ -39,3 +39,16 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Execute every emitted shader on GPU (SwiftShader)
         run: node tools/gpu-parity.js
+
+  bun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      # smoke: the library imports and converts under JavaScriptCore
+      - run: |
+          bun -e "const m = await import('./src/index.js'); const c = m.convert([0.7,0.1,250],'oklch','srgb'); if (!c.every(Number.isFinite)) throw new Error('bad convert: ' + c); console.log('bun smoke ok', c);"
+      # the full precision sweep exercises every space round-trip on JSC
+      - run: bun tools/precision-table.js
+      # and the bench answers the JSC-speed question on a server runtime
+      - run: bun tools/bench.js

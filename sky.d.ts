@@ -25,5 +25,11 @@ export function skyModel(opts: { elevation: number; turbidity?: number; albedo?:
  */
 export function skyRadiance(state: SkyState, theta: number, gamma: number, wavelength: number): number;
 
+/** Direct solar-disc radiance (limb-darkened, zero off-disc). Reference total = this + skyRadiance. */
+export function sunRadiance(state: SkyState, theta: number, gamma: number, wavelength: number): number;
+
+/** The direct sun's SPD (disc only); gamma 0 = disc center. */
+export function sunSPD(state: SkyState, theta: number, gamma?: number, opts?: { start?: number; step?: number; end?: number }): Spectrum;
+
 /** The sky's SPD for a view direction, ready for spectrumXy()/cctOf(). */
 export function skySPD(state: SkyState, theta: number, gamma: number, opts?: { start?: number; step?: number; end?: number }): Spectrum;

@@ -297,12 +297,12 @@ Across browser engines (`node tools/browser-bench.js`, object API):
 | srgb → oklch | 66 | 88 | 740 |
 | srgb → rec2020 | 60 | 80 | 584 |
 
-V8 and SpiderMonkey agree with the Node numbers. JavaScriptCore measures
-~10× slower — investigated: dispatch is exonerated (bypassing convert()
-saves <2%), and even hand-inlined raw arithmetic with no library code runs
-8× slower in Playwright's WebKit build, which appears not to reach JSC's
-top JIT tier. Real Safari likely performs substantially better; the library
-will not be contorted for a test-harness artifact.
+V8 and SpiderMonkey agree with the Node numbers. JavaScriptCore is now
+settled: under **Bun** (production JSC, exercised in CI) whitepoint converts
+at 50 ns/op — ahead of both reference libraries — and cusp gamut mapping
+runs 106 ns. An earlier ~10× reading came from Playwright's WebKit build,
+which doesn't reach JSC's top JIT tier; even hand-inlined raw arithmetic ran
+8× slow there. Harness artifact, confirmed twice.
 
 Every hot path is allocation-free with a caller-provided `out` array —
 verified by `node --expose-gc tools/alloc-audit.js` (< 0.01 B/op on

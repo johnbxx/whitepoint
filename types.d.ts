@@ -41,6 +41,14 @@ export type WhitePoint = IlluminantName | number[];
 
 // ---- conversion engine ----
 
+/** Batch path: interleaved buffer in, route resolved once, zero-alloc loop. */
+export function convertBuffer(
+  src: ArrayLike<number>,
+  from: string | object,
+  to: string | object,
+  dst?: number[] | Float32Array | Float64Array,
+): number[] | Float32Array | Float64Array;
+
 export function convert(coords: ArrayLike<number>, from: SpaceLike, to: SpaceLike, out?: Vec3): Vec3;
 export function resolve(space: SpaceLike): ColorSpace;
 export function registerRoute(fromId: string, toId: string, fn: (coords: ArrayLike<number>, out?: Vec3) => Vec3): void;
