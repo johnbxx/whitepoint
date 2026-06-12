@@ -151,6 +151,19 @@ const state = skyModel({ elevation: 0.5, turbidity: 3, albedo: 0.1 });
 skySPD(state, theta, gamma);  // absolute spectral radiance, W·m⁻²·sr⁻¹·nm⁻¹
 ```
 
+And the lab can grade the lamps themselves: CIE 13.3 **CRI** (Ra + all 14
+Ri) and IES **TM-30-20 / CIE 224:2017** color fidelity (Rf, gamut index Rg)
+computed from any SPD — workflows that exist in Python's colour-science and
+essentially nowhere else in JS. The CIECAM02 engine underneath is pinned to
+the CIE 159:2004 worked example, and the F-series reproduces its published
+scores (F2: Ra 64, Rf 70, Rg 86) with no fitting anywhere:
+
+```js
+import { cri, tm30 } from 'whitepoint/spectral';
+cri(spd);   // { Ra, Ri[14], cct, duv }
+tm30(spd);  // { Rf, Rg, cct, duv }
+```
+
 All of it runs live in the [light lab](https://somejohnbforya.github.io/whitepoint/light.html):
 the Mona Lisa under a sodium lamp, thirty meters of seawater, noon on Pluto
 (CIE 191 mesopic — it barely dims!), a Kubelka–Munk watercolor canvas you can

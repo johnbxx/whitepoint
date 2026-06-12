@@ -253,6 +253,15 @@ const zenith = skySPD(state, 0, Math.PI / 2 - 0.5);  // theta, gamma from sun
 cctOf(spectrumXy(zenith));                            // a very blue number
 ```
 
+## Grade a lamp (CRI + TM-30)
+
+```js
+import { cri, tm30, FL2_SPD } from 'whitepoint/spectral';
+const { Ra, Ri } = cri(FL2_SPD);     // CIE 13.3: Ra 64, R9 (strong red) -84
+const { Rf, Rg } = tm30(FL2_SPD);    // IES TM-30-20 / CIE 224: Rf 70, Rg 86
+// works on any SPD: measured, daylightSPD(T), planckianSPD(T), lineSPD(...)
+```
+
 ## Pitfalls worth knowing
 
 - **Lab/Luv L is 0–100; OKLab L is 0–1** — both per spec; don't mix them up.

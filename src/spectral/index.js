@@ -22,6 +22,7 @@ export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 export { WATER_ABSORPTION } from './data-water.js';
 export { V_PRIME_1951 };
+export { cri, tm30, cam02ViewingConditions, xyzToCam02Ucs } from './quality.js';
 
 /** Sample a uniform-grid spectrum at wavelength λ (nm), linear interpolation. */
 export function sampleSpd(spd, lambda) {

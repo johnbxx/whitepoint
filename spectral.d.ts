@@ -61,6 +61,19 @@ export function lineSPD(lines: ArrayLike<number>[], opts?: { start?: number; ste
 /** Low-pressure sodium: the Na D doublet (NIST ASD), 2:1 intensity. */
 export function sodiumSPD(opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 
+/** CIE 13.3-1995 color rendering index: Ra (mean R1–R8) + all 14 Ri (R9 = strong red). */
+export function cri(spd: Spectrum): { Ra: number; Ri: number[]; cct: number; duv: number };
+/** IES TM-30-20 / CIE 224:2017 color fidelity Rf and gamut index Rg. */
+export function tm30(spd: Spectrum): { Rf: number; Rg: number; cct: number; duv: number };
+
+export interface Cam02VC {
+  c: number; Nc: number; dRgb: number[]; fl: number; n: number; z: number; nbb: number; Aw: number;
+}
+/** CIECAM02 viewing conditions (average surround); the TM-30 engine, exported for reuse. */
+export function cam02ViewingConditions(whiteXyz100: ArrayLike<number>, La?: number, Yb?: number, discountIlluminant?: boolean): Cam02VC;
+/** CIECAM02 forward → CAM02-UCS J′a′b′, XYZ on the 0–100 scale. */
+export function xyzToCam02Ucs(xyz100: ArrayLike<number>, vc: Cam02VC, out?: number[]): number[];
+
 /** Jakob–Hanika sigmoid reflectance, Newton-solved to integrate back to the color exactly. */
 export function reflectanceOf(coords: ArrayLike<number>, space?: string | object): Spectrum;
 /** Kubelka–Munk mix of two reflectance spectra at concentration t. */

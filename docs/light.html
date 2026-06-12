@@ -84,6 +84,7 @@
     <input type="range" id="rl-cct" min="4000" max="25000" step="100" value="6504" style="width:220px">
     <button id="rl-adapt">eyes adjusted: off</button>
   </div>
+  <div class="row"><span class="readout" id="rl-report"></span></div>
   <div class="duo">
     <figure><canvas id="rl-canvas"></canvas><figcaption id="rl-cap">D65 gallery light</figcaption></figure>
     <figure><canvas id="rl-orig"></canvas><figcaption>sRGB original (D65)</figcaption></figure>
@@ -334,6 +335,12 @@ const TMP = [0, 0, 0];
       return convert(adaptOn ? adapt(xyz, white, 'D65') : xyz, 'xyz-d65', 'srgb');
     });
     $('rl-cap').textContent = label + (adaptOn ? ' · adapted' : '');
+    // the lamp report card: CIE 13.3 CRI + IES TM-30-20, live from the SPD
+    const c = spectral.cri(spd), t = spectral.tm30(spd);
+    $('rl-report').innerHTML =
+      `lamp report card — CRI Ra <b>${Math.round(c.Ra)}</b> · R9 <b>${Math.round(c.Ri[8])}</b>` +
+      ` · TM-30 Rf <b>${Math.round(t.Rf)}</b> · Rg <b>${Math.round(t.Rg)}</b>` +
+      ` · CCT <b>${Math.round(c.cct)} K</b>`;
   };
 
   const row = $('rl-presets');
