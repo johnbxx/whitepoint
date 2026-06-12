@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — the guide</title>
+<meta name="description" content="From your first CSS string to emitted shaders: a working guide to whitepoint — spaces, gamut mapping, codegen, and the spectral layer.">
+<style>
+  :root {
+    --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
+    --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.65 system-ui, -apple-system, sans-serif; padding-bottom: 6rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  header { padding: 3.5rem 0 1rem; }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; }
+  h1 .wp { background: linear-gradient(90deg, #4ba3f7, #f74b8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { color: var(--dim); margin-top: 0.5rem; max-width: 46rem; }
+  .toc { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.25rem 0 0; }
+  .toc a { font: 0.8rem var(--mono); background: var(--panel); color: var(--dim); border: 1px solid var(--edge); border-radius: 999px; padding: 0.25rem 0.75rem; text-decoration: none; }
+  .toc a:hover { color: var(--text); border-color: var(--accent); }
+  section { margin-top: 3.5rem; }
+  h2 { font-size: 1.45rem; margin-bottom: 0.6rem; letter-spacing: -0.01em; }
+  h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
+  p, li { color: var(--dim); max-width: 46rem; }
+  p b, li b { color: var(--text); font-weight: 600; }
+  ul, ol { padding-left: 1.3rem; margin: 0.5rem 0 1rem; }
+  li { margin-bottom: 0.3rem; }
+  pre, code { font-family: var(--mono); font-size: 0.84rem; }
+  pre { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 1rem 1.2rem; overflow-x: auto; line-height: 1.55; margin: 0.8rem 0 0.4rem; max-width: 46rem; }
+  code.inline { background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  .out { font: 0.8rem var(--mono); color: #7fd17f; background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid #2e4d2e; border-radius: 8px; padding: 0.55rem 1rem; margin: 0 0 1rem; max-width: 46rem; white-space: pre-wrap; }
+  .out::before { content: '→ runs live: '; color: var(--dim); }
+  .sw { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--edge); vertical-align: -3px; margin-right: 2px; }
+  table { border-collapse: collapse; font-size: 0.88rem; margin: 0.6rem 0 1rem; }
+  th, td { text-align: left; padding: 0.4rem 1rem 0.4rem 0; border-bottom: 1px solid var(--edge); }
+  th { color: var(--dim); font-weight: 500; font-size: 0.78rem; }
+  td { color: var(--dim); }
+  td code { color: var(--accent); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 4rem; color: var(--dim); font-size: 0.85rem; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; text-decoration: none; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
+</style>
+</head>
+<body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a class="here" href="./guide.html">guide</a>
+    <a href="./index.html">demos</a>
+    <a href="./convert.html">convert</a>
+    <a href="./light.html">light lab</a>
+    <a href="./accuracy.html">accuracy</a>
+    <a href="./recipes.html">recipes</a>
+    <a href="./api.html">api</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/somejohnbforya/whitepoint">github</a>
+  </div>
+</div></nav>
+<main>
+<header>
+  <h1><span class="wp">the guide</span></h1>
+  <p class="tagline">From your first CSS string to emitted shaders. Every example on this
+  page <b>runs live</b> against the library — the green boxes are computed in your browser
+  right now, so the documentation cannot lie about its outputs.</p>
+  <div class="toc">
+    <a href="#start">start here</a>
+    <a href="#mental-model">mental model</a>
+    <a href="#which-space">which space?</a>
+    <a href="#gamut">wide gamut</a>
+    <a href="#shaders">into the shader</a>
+    <a href="#spectral">the spectral layer</a>
+    <a href="#performance">performance</a>
+    <a href="#trust">trust</a>
+  </div>
+</header>
+
+<section id="start">
+  <h2>Start here</h2>
+  <pre>npm install whitepoint</pre>
+  <p>Ten seconds to first conversion: strings parse at the front door, coordinates come
+  out in any of the <a href="./api.html">42 spaces</a>, and strings go back out for CSS.</p>
+  <pre>import { parseTo, convert, serialize, mix } from 'whitepoint';
+
+parseTo('#ff8800', 'oklch');          // hex → OKLCH coordinates
+convert([0.7, 0.15, 250], 'oklch', 'display-p3');
+serialize([0.7, 0.15, 250], 'oklch'); // → CSS string
+mix('#0066ff', 'tomato', 0.5, 'oklch');  // strings work in mix too? No — see below</pre>
+  <div class="out" id="o-start"></div>
+  <p><b>One honest correction to that last line</b>: <code class="inline">mix()</code> takes
+  coordinates, not strings — the string boundary is <code class="inline">parse</code>/<code class="inline">parseTo</code>/<code class="inline">serialize</code>,
+  and everything inside works on plain arrays. The working version:</p>
+  <pre>mix(parseTo('#0066ff', 'oklch'), parseTo('tomato', 'oklch'), 0.5, 'oklch');</pre>
+  <div class="out" id="o-mix"></div>
+</section>
+
+<section id="mental-model">
+  <h2>The mental model — five sentences</h2>
+  <ol>
+    <li><b>A color is three plain numbers</b> in a named space: <code class="inline">[0.7, 0.15, 250]</code> in <code class="inline">'oklch'</code>. No wrapper class, ever.</li>
+    <li><b>Channels are 0–1 floats</b>; hue channels are degrees; CIE Lab/LCH lightness is 0–100 (per spec) while OKLab/OKLCH lightness is 0–1 — this is the one pitfall worth memorizing.</li>
+    <li><b>Every conversion routes through XYZ-D65</b> (with precomposed fast paths), so any space converts to any other, including ones that have never heard of each other.</li>
+    <li><b>Alpha is not a coordinate.</b> It rides along in <code class="inline">parse()</code>'s result and in the explicit alpha-aware entry points (<code class="inline">mixAlpha</code>, <code class="inline">composite</code>, <code class="inline">serialize</code>'s option).</li>
+    <li><b>Nothing rounds until you ask.</b> Bytes and hex are explicit boundaries (<code class="inline">toBytes</code>/<code class="inline">toHex</code>); internally it's float64 at ~10⁻¹⁵ round-trip error.</li>
+  </ol>
+</section>
+
+<section id="which-space">
+  <h2>Which space should I use?</h2>
+  <p>The honest cheat sheet, by task:</p>
+  <table>
+    <tr><th>task</th><th>space</th><th>why</th></tr>
+    <tr><td>UI colors, design tokens</td><td><code>oklch</code></td><td>perceptually uniform lightness + chroma, CSS-native, hue stays put when you adjust L or C</td></tr>
+    <tr><td>color picker UIs</td><td><code>okhsl</code> / <code>okhsv</code></td><td>OKLab quality with bounded 0–1 sliders (sRGB-shaped by design)</td></tr>
+    <tr><td>gradients &amp; mixing</td><td><code>oklch</code> (or <code>oklab</code> to avoid hue arcs)</td><td>no muddy middles; <code>mix()</code> implements all four CSS hue arcs</td></tr>
+    <tr><td>"how different are these?"</td><td><code>deltaEOK</code> · <code>deltaE2000</code> · <code>deltaECAM16</code></td><td>quick UI checks · industry/textiles · viewing-condition-aware</td></tr>
+    <tr><td>accessibility</td><td><code>contrastWCAG2</code></td><td>the binding standard (APCA ships when WCAG 3 freezes)</td></tr>
+    <tr><td>wide gamut / HDR</td><td><code>display-p3</code>, <code>rec2020</code> / <code>rec2100-pq</code>, <code>ictcp</code>, <code>jzazbz</code></td><td>see the gamut section below</td></tr>
+    <tr><td>film &amp; VFX interchange</td><td><code>aces2065-1</code>, <code>acescg</code>, <code>acescc</code></td><td>the AMPAS pipeline, ~D60 white handled through the real CAT machinery</td></tr>
+    <tr><td>Material Design parity</td><td><code>hct</code></td><td>bit-compatible with Google's HCT (verified against their library)</td></tr>
+    <tr><td>research / measurement</td><td><code>xyz-d65</code>, <code>lab</code> + <a href="#spectral">the spectral layer</a></td><td>the hub itself, and physics underneath it</td></tr>
+  </table>
+  <p>Live, so you can feel the difference — the same two colors mixed three ways:</p>
+  <pre>const a = parseTo('#0066ff', s), b = parseTo('#ffcc00', s);  // for s of …
+serialize(mix(a, b, 0.5, s), s)</pre>
+  <div class="out" id="o-mix3"></div>
+</section>
+
+<section id="gamut">
+  <h2>Wide gamut without tears</h2>
+  <p>Modern displays show more than sRGB; CSS can express more than any display. The
+  workflow is three verbs:</p>
+  <pre>import { inGamut, toGamut, serialize, parseTo } from 'whitepoint';
+
+const hot = parseTo('color(display-p3 1 0.2 0)', 'oklch'); // a P3-only red
+inGamut(hot, 'oklch', 'srgb');          // can sRGB show it?
+inGamut(hot, 'oklch', 'display-p3');    // can P3?
+
+// for the sRGB fallback, map it INTO the gamut — don't clip channels
+const fallback = toGamut(hot, 'oklch', { gamut: 'srgb', method: 'cusp' });</pre>
+  <div class="out" id="o-gamut"></div>
+  <p>Three mapping methods, in one sentence each: <b>clip</b> clamps channels (fast,
+  shifts hue — fine for previews); <b>css</b> is the CSS Color 4 §13 reference algorithm
+  (what browsers are specified to do); <b>cusp</b> projects toward the gamut cusp in
+  OKLCH with the cusp <i>solved exactly</i> from the gamut's own definition — hue
+  preserved to machine precision, and the reason the <a href="./accuracy.html">accuracy
+  page</a> has its favorite chart. The CSS pattern for shipping both:</p>
+  <pre>@supports (color: color(display-p3 1 1 1)) { /* serialize(hot, 'display-p3') */ }
+/* fallback: serialize(toGamut(hot, …), 'srgb') */</pre>
+</section>
+
+<section id="shaders">
+  <h2>Into the shader</h2>
+  <p>This is the part no other color library does: the function you just used in JS can
+  be <b>emitted as GLSL or WGSL</b>, generated from the same single-sourced constants,
+  and CI executes every emitted program on a real GPU to confirm the outputs match the
+  float64 library. Your gradient on the CPU and your gradient on the GPU stop being
+  two implementations that drift — they're one derivation, printed twice.</p>
+  <pre>import { glsl, wgsl, glslMix, glslGamutMap } from 'whitepoint/codegen';
+
+glsl('oklch', 'display-p3');   // vec3 wp_oklch_to_display_p3(vec3 c)
+wgsl('jzazbz', 'srgb');        // the same chain as WGSL
+glslMix('oklch');              // per-pixel CSS-correct mixing
+glslGamutMap('srgb');          // the exact-cusp mapper, in-shader</pre>
+  <div class="out" id="o-glsl"></div>
+  <p>What's emittable: every matrix/transfer-function chain among the
+  <a href="./api.html">registry spaces</a>, plus hand-templated emitters for the solver
+  spaces (<code class="inline">okhsl</code>, <code class="inline">okhsv</code>,
+  <code class="inline">hsluv</code>, <code class="inline">hpluv</code>) and the appearance models
+  (<code class="inline">cam16-ucs</code>, <code class="inline">hct</code>) — solvers and all.
+  Paste the output into your fragment shader, or template it at build time; the code is
+  dependency-free and self-contained.</p>
+</section>
+
+<section id="spectral">
+  <h2>The spectral layer — color before it was three numbers</h2>
+  <p>Everything above treats color as coordinates. <code class="inline">whitepoint/spectral</code>
+  goes one level down, to light as a function of wavelength — because some questions
+  can't be answered any other way: <i>what does this color look like under candlelight?
+  what's the CRI of this lamp? what happens to red at 20 meters underwater?</i></p>
+  <pre>import { reflectanceOf, reflectanceToXyz, planckianSPD, cri, tm30 }
+  from 'whitepoint/spectral';
+
+// "this hex, under candlelight": give the color a plausible spectrum,
+// re-light it, convert back
+const refl = reflectanceOf(parseTo('#ff8800', 'srgb'));
+const candle = planckianSPD(1850);
+const xyz = reflectanceToXyz(refl, { illuminant: candle });
+
+// grade a lamp like a lighting engineer
+cri(FL2_SPD);   // CIE 13.3: { Ra: 64, Ri[…], R9: −84 }
+tm30(FL2_SPD);  // IES TM-30-20: { Rf: 70, Rg: 86 }</pre>
+  <div class="out" id="o-spectral"></div>
+  <p>The layer is deep — CMFs at 5 nm and 1 nm, Planck's law, CIE daylight synthesis,
+  CCT solving on the exact locus, color-blindness simulation, scotopic/mesopic vision,
+  Beer–Lambert attenuation with measured water data, Kubelka–Munk paint mixing, and the
+  Hosek–Wilkie sky with its solar disc. The <a href="./light.html">light lab</a> runs
+  all of it live; the <a href="./recipes.html">recipes</a> have the copy-paste versions.</p>
+</section>
+
+<section id="performance">
+  <h2>The performance playbook</h2>
+  <p>Three tiers, slowest to fastest — pick by how hot your loop is:</p>
+  <pre>// 1. strings + ids: fine for setup code (~80 ns with allocation)
+const c = convert(coords, 'oklch', 'srgb');
+
+// 2. space objects + out-array: the zero-allocation hot path (~47 ns)
+import { OKLCH, sRGB } from 'whitepoint';
+const out = [0, 0, 0];
+convert(coords, OKLCH, sRGB, out);
+
+// 3. buffers: a megapixel in one call, route resolved once (~46 ns/px)
+convertBuffer(float32Pixels, 'oklch', 'srgb');   // in place</pre>
+  <p>Those numbers are measured, on-record, and competitive with (mostly ahead of) every
+  JS color library we know of — methodology and the comparison table live in the
+  <a href="https://github.com/somejohnbforya/whitepoint#readme">README</a>. The
+  zero-allocation claim is enforced by a CI audit on retained memory, not asserted.</p>
+</section>
+
+<section id="trust">
+  <h2>Why you can trust the numbers</h2>
+  <ul>
+    <li><b>No transcribed matrices.</b> Every RGB↔XYZ matrix is derived from the cited
+    primaries at module load and asserted against the spec's published values in CI —
+    which is how this library caught the stale 10-digit ProPhoto/Bradford folklore
+    other libraries still ship.</li>
+    <li><b>No hand-typed data.</b> Every spectral table arrives via a committed generator
+    script from a cited source (CVRL, CIE, W3C, OMLC, the Hosek–Wilkie distribution) —
+    even the 148 named colors are parsed out of the CSS spec.</li>
+    <li><b>Oracles, not vibes.</b> The suite compares against culori, colorjs.io,
+    @texel/color, Google's Material library, python colour-science, and — for the sky —
+    the authors' own compiled C, digit for digit.</li>
+    <li><b>The hostile-input contract.</b> Conversions never throw and never hang; NaN
+    and ±Infinity flow through as garbage-in-garbage-out; in-domain inputs always
+    produce finite outputs. Fuzzed in CI.</li>
+  </ul>
+  <p>The full evidence is on the <a href="./accuracy.html">accuracy page</a>; the policy
+  statements live in the <a href="https://github.com/somejohnbforya/whitepoint/blob/main/NORTHSTAR.md">north star</a> —
+  including the anti-goals, and the one we amended on purpose.</p>
+</section>
+
+<footer>
+  <p>Next steps: the <a href="./convert.html">converter</a> for exploring,
+  <a href="./recipes.html">recipes</a> for copy-paste, the <a href="./api.html">API
+  reference</a> for everything. Or read the <a href="./light.html">light lab</a> if you
+  want to see a painting at the bottom of the sea.</p>
+</footer>
+</main>
+
+<script type="module">
+import * as wp from './whitepoint.js';
+const { parseTo, convert, serialize, mix, inGamut, toGamut, spectral, codegen } = wp;
+const $ = (id) => document.getElementById(id);
+const sw = (srgb) => {
+  const c = srgb.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255));
+  return `<span class="sw" style="background: rgb(${c.join(' ')})"></span>`;
+};
+
+// start
+$('o-start').innerHTML = [
+  `parseTo('#ff8800', 'oklch')  →  [${parseTo('#ff8800', 'oklch').map((v) => v.toPrecision(5)).join(', ')}]`,
+  `convert([0.7,0.15,250], 'oklch', 'display-p3')  →  [${convert([0.7, 0.15, 250], 'oklch', 'display-p3').map((v) => v.toPrecision(5)).join(', ')}]`,
+  `serialize([0.7,0.15,250], 'oklch')  →  '${serialize([0.7, 0.15, 250], 'oklch')}'`,
+].join('\n');
+
+const mixed = mix(parseTo('#0066ff', 'oklch'), parseTo('tomato', 'oklch'), 0.5, 'oklch');
+$('o-mix').innerHTML = `${sw(convert(mixed, 'oklch', 'srgb'))} ${serialize(mixed, 'oklch')}`;
+
+// which space: same pair, three spaces
+$('o-mix3').innerHTML = ['srgb', 'oklab', 'oklch'].map((s) => {
+  const m = mix(parseTo('#0066ff', s), parseTo('#ffcc00', s), 0.5, s);
+  return `${sw(convert(m, s, 'srgb'))} in ${s.padEnd(6)} → ${serialize(convert(m, s, 'oklch'), 'oklch', { precision: 4 })}`;
+}).join('\n');
+
+// gamut
+const hot = parseTo('color(display-p3 1 0.2 0)', 'oklch');
+const fb = toGamut(hot, 'oklch', { gamut: 'srgb', method: 'cusp' });
+$('o-gamut').innerHTML = [
+  `inGamut(hot, 'oklch', 'srgb')        →  ${inGamut(hot, 'oklch', 'srgb')}`,
+  `inGamut(hot, 'oklch', 'display-p3')  →  ${inGamut(hot, 'oklch', 'display-p3')}`,
+  `${sw(convert(fb, 'oklch', 'srgb'))} fallback = ${serialize(fb, 'oklch', { precision: 4 })}  (hue ${hot[2].toFixed(2)}° → ${fb[2].toFixed(2)}° — preserved)`,
+].join('\n');
+
+// shaders: show the real first lines of emitted GLSL
+const g = codegen.glsl('oklch', 'display-p3');
+$('o-glsl').textContent = g.split('\n').slice(0, 6).join('\n') + `\n… ${g.split('\n').length} lines, self-contained`;
+
+// spectral
+const refl = spectral.reflectanceOf(parseTo('#ff8800', 'srgb'));
+const candleXyz = spectral.reflectanceToXyz(refl, { illuminant: spectral.planckianSPD(1850) });
+const f2cri = spectral.cri(spectral.FL2_SPD), f2tm = spectral.tm30(spectral.FL2_SPD);
+$('o-spectral').innerHTML = [
+  `${sw(parseTo('#ff8800', 'srgb'))} #ff8800 under D65   →   ${sw(convert(candleXyz, 'xyz-d65', 'srgb'))} the same surface under candlelight`,
+  `cri(FL2)  → Ra ${f2cri.Ra.toFixed(1)}, R9 ${f2cri.Ri[8].toFixed(0)}     tm30(FL2) → Rf ${f2tm.Rf.toFixed(1)}, Rg ${f2tm.Rg.toFixed(1)}`,
+].join('\n');
+
+window.__guideReady = true;
+</script>
+</body>
+</html>

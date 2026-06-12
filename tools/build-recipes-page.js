@@ -88,6 +88,7 @@ const page = `<!doctype html>
 <nav><div class="navin">
   <a class="brand" href="./index.html">whitepoint</a>
   <div class="navlinks">
+    <a href="./guide.html">guide</a>
     <a href="./index.html">demos</a>
     <a href="./convert.html">convert</a>
     <a href="./light.html">light lab</a>

@@ -4,6 +4,9 @@
 > **Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.**
 
 [![npm](https://img.shields.io/npm/v/whitepoint)](https://www.npmjs.com/package/whitepoint)
+[**→ the guide**](https://somejohnbforya.github.io/whitepoint/guide.html) —
+from your first CSS string to emitted shaders, with live examples.
+
 [![CI](https://github.com/somejohnbforya/whitepoint/actions/workflows/ci.yml/badge.svg)](https://github.com/somejohnbforya/whitepoint/actions/workflows/ci.yml)
 &nbsp;[**live demos**](https://somejohnbforya.github.io/whitepoint/)
 · [**measured accuracy**](https://somejohnbforya.github.io/whitepoint/accuracy.html)

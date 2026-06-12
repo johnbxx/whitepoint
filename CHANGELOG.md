@@ -4,6 +4,22 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (none have needed to yet — the API audit before 0.7.0 found
 no renames worth their churn).
 
+## 0.9.0 — 2026-06-12
+
+The front doors.
+
+- **The converter playground** (`docs/convert.html`): any CSS color in,
+  all 42 spaces out with copyable serializations, gamut badges,
+  exact-cusp-mapped previews, nearest named color, WCAG contrast, CVD
+  swatches, and a CCT line when the color plausibly is a light.
+- **The guide** (`docs/guide.html`): the narrative walk from
+  `parseTo('#ff8800', 'oklch')` to emitted shaders — mental model,
+  which-space-when, wide-gamut workflow, codegen, the spectral layer,
+  performance tiers, and why to trust the numbers. Every example runs
+  live against the library in the page, so the documentation cannot lie
+  about its outputs.
+- Site nav unified across all seven pages; README leads with the guide.
+
 ## 0.8.0 — 2026-06-12
 
 The string boundary opens — by decision, not drift.
