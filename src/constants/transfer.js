@@ -140,6 +140,7 @@ function rec2100HlgEncode(v) {
 
 const identity = (v) => v;
 
+/** Transfer-function registry: named encode/decode pairs for every RGB space EOTF/OETF. */
 export const transfer = {
   srgb:     { decode: srgbDecode,     encode: srgbEncode },
   a98:      { decode: a98Decode,      encode: a98Encode },

@@ -86,6 +86,7 @@ export function cam16ViewingConditions(opts = {}) {
   return { fl, fl25: Math.pow(fl, 0.25), n, z, c, nc: Nc, nbb, ncb: nbb, aw, rgbD, cz: c * z };
 }
 
+/** The registry default viewing conditions — cam16ViewingConditions() with no overrides. */
 export const CAM16_DEFAULT_VC = cam16ViewingConditions();
 
 const RGB = [0, 0, 0];

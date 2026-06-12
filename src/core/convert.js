@@ -31,6 +31,7 @@ import { rectToPolar, polarToRect } from './polar.js';
 import { transfer } from '../constants/transfer.js';
 import { mul } from './mat3.js';
 
+/** The space registry: every id convert() accepts, mapped to its space object. */
 export const spaces = {
   'srgb': sRGB,
   'srgb-linear': sRGBLinear,
@@ -78,6 +79,7 @@ export const spaces = {
   'ycbcr-709-limited': YCbCr709Limited,
 };
 
+/** Resolve a space id string to its registry object. Throws on unknown ids. */
 export function resolve(space) {
   if (typeof space === 'string') {
     const s = spaces[space];
@@ -89,6 +91,7 @@ export function resolve(space) {
 
 const routes = new Map();
 
+/** Register a precomposed direct conversion for a space pair, bypassing the XYZ hub. */
 export function registerRoute(fromId, toId, fn) {
   routes.set(fromId + '|' + toId, fn);
 }

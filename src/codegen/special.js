@@ -496,6 +496,7 @@ export function specialSource(lang, from, to, name) {
   return builder ? builder(lang, name) : null;
 }
 
+/** The hand-templated emitter pairs (solver spaces + CAM16) available beyond op-chains. */
 export function specialPairs() {
   return Object.keys(SPECIAL).map((k) => k.split('|'));
 }

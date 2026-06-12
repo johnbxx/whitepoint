@@ -7,6 +7,7 @@ import { srgbToHsl } from './hsl.js';
 
 const TMP = [0, 0, 0];
 
+/** sRGB → HSV (hue degrees, s/v 0–1), the direct hexcone route. */
 export function srgbToHsv(rgb, out = [0, 0, 0]) {
   const max = Math.max(rgb[0], rgb[1], rgb[2]);
   const min = Math.min(rgb[0], rgb[1], rgb[2]);
@@ -16,6 +17,7 @@ export function srgbToHsv(rgb, out = [0, 0, 0]) {
   return out;
 }
 
+/** HSV → sRGB, inverse of srgbToHsv. */
 export function hsvToSrgb(hsv, out = [0, 0, 0]) {
   const h = ((hsv[0] % 360) + 360) % 360;
   const s = hsv[1], v = hsv[2];
@@ -29,6 +31,7 @@ export function hsvToSrgb(hsv, out = [0, 0, 0]) {
   return out;
 }
 
+/** sRGB → HSI (intensity = mean of channels — the classic image-processing variant). */
 export function srgbToHsi(rgb, out = [0, 0, 0]) {
   const sum = rgb[0] + rgb[1] + rgb[2];
   const min = Math.min(rgb[0], rgb[1], rgb[2]);
@@ -38,6 +41,7 @@ export function srgbToHsi(rgb, out = [0, 0, 0]) {
   return out;
 }
 
+/** HSI → sRGB, inverse of srgbToHsi. */
 export function hsiToSrgb(hsi, out = [0, 0, 0]) {
   const h = ((hsi[0] % 360) + 360) % 360;
   const s = hsi[1], i = hsi[2];

@@ -67,6 +67,7 @@ const PORTER_DUFF = {
   'lighter':          [() => 1, () => 1], // Porter-Duff "plus"; may exceed 1, not clamped (HDR-safe)
 };
 
+/** The 13 Porter–Duff operator names composite() accepts. */
 export const porterDuffOperators = Object.keys(PORTER_DUFF);
 
 /**
@@ -206,6 +207,7 @@ function blendNonSeparable(mode, cb, cs, out3) {
   return out3;
 }
 
+/** The 16 W3C blend mode names blend() accepts. */
 export const blendModes = [...Object.keys(SEPARABLE), 'hue', 'saturation', 'color', 'luminosity'];
 
 const _B = [0, 0, 0];

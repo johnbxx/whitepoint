@@ -40,7 +40,11 @@ npm install whitepoint
 ```
 
 Plain ESM, zero dependencies, TypeScript definitions included, `sideEffects:
-false` (tree-shakes to what you import). Two entry points: `whitepoint`
+false` (tree-shakes to what you import). Numerical policy, enforced by the
+fuzz suite: conversions never throw and never hang — garbage in, garbage
+out — and in-domain inputs always produce finite outputs. The complete
+[API reference](https://somejohnbforya.github.io/whitepoint/api.html) is
+generated from the source JSDoc at build time, so it cannot drift. Two entry points: `whitepoint`
 (conversions, illuminants, gamut) and `whitepoint/codegen` (shader emission).
 
 ## Conversions

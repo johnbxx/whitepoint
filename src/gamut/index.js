@@ -81,7 +81,10 @@ function cssMap(oklch, G, outGamutCoords) {
   const current = _lch;
   current[0] = oklch[0]; current[1] = oklch[1]; current[2] = oklch[2];
 
-  while (max - min > EPS) {
+  // bounded: finite inputs converge in < 60 halvings; non-finite chroma
+  // (where the interval never shrinks) must not hang — garbage in,
+  // garbage out, but always out
+  for (let i = 0; i < 100 && max - min > EPS; i++) {
     current[1] = (min + max) / 2;
     convert(current, 'oklch', G, _gc);
     if (minInGamut && inRange(_gc, 0)) {
@@ -196,6 +199,7 @@ export function findCuspNumerical(h, gamut) {
 // (after Ottosson 2021, who fits only to seed his iteration — we bracket
 // and bisect the cubic instead). Verified against findCuspNumerical in CI.
 
+/** The OKLCH gamut cusp (L, C) at hue h — exact channel-zero cubic, centidegree-cached. */
 export function findCusp(h, gamut) {
   const G = resolveRgbGamut(gamut, 'findCusp');
   const p = okParams(G);

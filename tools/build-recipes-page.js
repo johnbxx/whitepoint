@@ -92,6 +92,7 @@ const page = `<!doctype html>
     <a href="./light.html">light lab</a>
     <a href="./accuracy.html">accuracy</a>
     <a class="here" href="./recipes.html">recipes</a>
+    <a href="./api.html">api</a>
     <a href="https://www.npmjs.com/package/whitepoint">npm</a>
     <a href="https://github.com/somejohnbforya/whitepoint">github</a>
   </div>

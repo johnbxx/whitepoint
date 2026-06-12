@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whitepoint — API reference</title>
+<style>
+  :root { --bg: #0c0d10; --panel: #14161b; --edge: #23262e; --text: #e8eaf0; --dim: #9aa0ae; --accent: #4ba3f7; --mono: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, sans-serif; padding-bottom: 6rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+  header { padding: 3.5rem 0 1rem; }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; }
+  h3 { font-size: 1.25rem; margin: 2.5rem 0 0.75rem; }
+  h4 { font-size: 1rem; margin: 1.4rem 0 0.25rem; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
+  .mod { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); font-weight: 400; margin-left: 0.5rem; }
+  .src { font-family: var(--mono); font-size: 0.7rem; color: var(--dim); font-weight: 400; margin-left: 0.5rem; }
+  .typ { color: var(--dim); font-family: var(--mono); font-size: 0.8em; }
+  .prm { color: var(--accent); background: none; padding: 0; }
+  article p { color: var(--dim); font-size: 0.92rem; max-width: 46rem; }
+  table { border-collapse: collapse; font-size: 0.9rem; }
+  td { padding: 0.25rem 1rem 0.25rem 0; border-bottom: 1px solid var(--edge); color: var(--dim); }
+  a { color: var(--accent); text-decoration: none; }
+  nav { position: sticky; top: 0; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--edge); z-index: 10; }
+  .navin { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline; padding: 0.65rem 1.25rem; }
+  .brand { font-weight: 650; color: var(--text); text-decoration: none; }
+  .navlinks a { color: var(--dim); margin-left: 1.1rem; font-size: 0.9rem; }
+  .navlinks a:hover, .navlinks a.here { color: var(--text); }
+</style>
+</head>
+<body>
+<nav><div class="navin">
+  <a class="brand" href="./index.html">whitepoint</a>
+  <div class="navlinks">
+    <a href="./index.html">demos</a>
+    <a href="./light.html">light lab</a>
+    <a href="./accuracy.html">accuracy</a>
+    <a href="./recipes.html">recipes</a>
+    <a class="here" href="./api.html">api</a>
+    <a href="https://www.npmjs.com/package/whitepoint">npm</a>
+    <a href="https://github.com/somejohnbforya/whitepoint">github</a>
+  </div>
+</div></nav>
+<main>
+<header>
+  <h1>API reference</h1>
+  <p style="color: var(--dim); margin-top: 0.5rem">Generated from the source JSDoc by
+  <code>tools/build-api-page.js</code> — exports are enumerated by importing the entry
+  points, so this page cannot drift from the package. Numerical policy: garbage in,
+  garbage out, but conversions never throw and never hang; in-domain inputs always
+  produce finite outputs (enforced in <code>test/garbage.test.js</code>).</p>
+</header>
+
+<section>
+  <h3>The 42 spaces, 43 ids <span class="mod">whitepoint</span></h3>
+  <p style="color: var(--dim); font-size: 0.92rem">Every id below works in
+  <code>convert()</code>, <code>mix()</code>, <code>toGamut()</code>, and friends; each
+  also has a named export object (<code>sRGB</code>, <code>OKLCH</code>, …) for
+  zero-dispatch hot loops.</p>
+  <table><tr><td><code>a98-rgb</code></td><td></td></tr>
+<tr><td><code>aces2065-1</code></td><td></td></tr>
+<tr><td><code>acescc</code></td><td></td></tr>
+<tr><td><code>acescct</code></td><td></td></tr>
+<tr><td><code>acescg</code></td><td></td></tr>
+<tr><td><code>bt709</code></td><td></td></tr>
+<tr><td><code>cam16</code></td><td></td></tr>
+<tr><td><code>cam16-ucs</code></td><td></td></tr>
+<tr><td><code>dci-p3</code></td><td></td></tr>
+<tr><td><code>din99o</code></td><td></td></tr>
+<tr><td><code>din99o-lch</code></td><td></td></tr>
+<tr><td><code>display-p3</code></td><td></td></tr>
+<tr><td><code>hct</code></td><td></td></tr>
+<tr><td><code>hpluv</code></td><td></td></tr>
+<tr><td><code>hsi</code></td><td></td></tr>
+<tr><td><code>hsl</code></td><td></td></tr>
+<tr><td><code>hsluv</code></td><td></td></tr>
+<tr><td><code>hsv</code></td><td></td></tr>
+<tr><td><code>hunter-lab</code></td><td></td></tr>
+<tr><td><code>hwb</code></td><td></td></tr>
+<tr><td><code>ictcp</code></td><td></td></tr>
+<tr><td><code>jzazbz</code></td><td></td></tr>
+<tr><td><code>jzczhz</code></td><td></td></tr>
+<tr><td><code>lab</code></td><td></td></tr>
+<tr><td><code>lch</code></td><td></td></tr>
+<tr><td><code>lchuv</code></td><td></td></tr>
+<tr><td><code>luv</code></td><td></td></tr>
+<tr><td><code>okhsl</code></td><td></td></tr>
+<tr><td><code>okhsv</code></td><td></td></tr>
+<tr><td><code>oklab</code></td><td></td></tr>
+<tr><td><code>oklch</code></td><td></td></tr>
+<tr><td><code>prophoto-rgb</code></td><td></td></tr>
+<tr><td><code>rec2020</code></td><td></td></tr>
+<tr><td><code>rec2100-hlg</code></td><td></td></tr>
+<tr><td><code>rec2100-pq</code></td><td></td></tr>
+<tr><td><code>srgb</code></td><td></td></tr>
+<tr><td><code>srgb-linear</code></td><td></td></tr>
+<tr><td><code>xyb</code></td><td></td></tr>
+<tr><td><code>xyz</code></td><td></td></tr>
+<tr><td><code>xyz-d50</code></td><td></td></tr>
+<tr><td><code>xyz-d65</code></td><td></td></tr>
+<tr><td><code>ycbcr-601-full</code></td><td></td></tr>
+<tr><td><code>ycbcr-709-limited</code></td><td></td></tr></table>
+</section>
+
+
+<section>
+  <h3>Conversions <span class="mod">whitepoint</span></h3>
+  <article id="convert"><h4><code>convert</code> <span class="src">core/convert.js</span></h4><p>Convert coordinates between any two color spaces.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> input coordinates (length 3)
+<br><code class="prm">from</code> <span class="typ">object|string</span> source space (object or id)
+<br><code class="prm">to</code> <span class="typ">object|string</span> destination space (object or id)
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> optional output array (zero-allocation hot loops)</p></article>
+<article id="convertBuffer"><h4><code>convertBuffer</code> <span class="src">core/convert.js</span></h4><p>Convert an interleaved buffer of coordinates — [x0,y0,z0, x1,y1,z1, …] —
+between two color spaces. The route is resolved once and the loop runs
+allocation-free: a megapixel converts in one call at the cost of the
+optimal hand-written zero-alloc loop (~46 ns/px for oklch→srgb), 1.75×
+faster than the idiomatic fresh-array-per-pixel pattern. The point is
+that you don't have to know how to write that loop.</p><p><br><code class="prm">src</code> <span class="typ">ArrayLike&lt;number&gt;</span> length must be a multiple of 3
+<br><code class="prm">from</code> <span class="typ">object|string</span> source space (object or id)
+<br><code class="prm">to</code> <span class="typ">object|string</span> destination space (object or id)
+<br><code class="prm">[dst]</code> <span class="typ">number[]|Float32Array|Float64Array</span> defaults to src (in place)</p></article>
+<article id="resolve"><h4><code>resolve</code> <span class="src">core/convert.js</span></h4><p>Resolve a space id string to its registry object. Throws on unknown ids.</p></article>
+<article id="registerRoute"><h4><code>registerRoute</code> <span class="src">core/convert.js</span></h4><p>Register a precomposed direct conversion for a space pair, bypassing the XYZ hub.</p></article>
+<article id="spaces"><h4><code>spaces</code> <span class="src">core/convert.js</span></h4><p>The space registry: every id convert() accepts, mapped to its space object.</p></article>
+<article id="makeYCbCr"><h4><code>makeYCbCr</code> <span class="src">spaces/ycbcr.js</span></h4><p>Build a YCbCr space. Both options are REQUIRED — there is no default
+YCbCr, by design.</p><p>@param {{matrix: '601'|'709'|'2020', range: 'full'|'limited'}} opts</p></article>
+<article id="oklabToRgbDirect"><h4><code>oklabToRgbDirect</code> <span class="src">spaces/oklab.js</span></h4><p>Build a direct OKLab → RGB-space converter with the LMS→linear-RGB matrix
+precomposed at build time. This is the hot path for rendering work: one
+3×3, three cubes, one 3×3, one transfer encode.</p></article>
+</section>
+
+<section>
+  <h3>Bytes & hex <span class="mod">whitepoint</span></h3>
+  <article id="toBytes"><h4><code>toBytes</code> <span class="src">core/bytes.js</span></h4><p>0–1 float channels → 0–255 integers (clamped, rounded).</p></article>
+<article id="fromBytes"><h4><code>fromBytes</code> <span class="src">core/bytes.js</span></h4><p>0–255 integers → 0–1 float channels.</p></article>
+<article id="toHex"><h4><code>toHex</code> <span class="src">core/bytes.js</span></h4><p>0–1 float sRGB channels → '#aabbcc'.</p></article>
+<article id="fromHex"><h4><code>fromHex</code> <span class="src">core/bytes.js</span></h4><p>Hex string ('#aabbcc' or '#abc') → 0–1 float sRGB channels.</p></article>
+</section>
+
+<section>
+  <h3>Illuminants & adaptation <span class="mod">whitepoint</span></h3>
+  <article id="adapt"><h4><code>adapt</code> <span class="src">lab/adapt.js</span></h4><p>Adapt XYZ tristimulus values from one illuminant to another.</p><p><br><code class="prm">xyz</code> <span class="typ">number[]</span> input XYZ
+<br><code class="prm">from</code> <span class="typ">string|number[]</span> source white point (name, [x,y], or [X,Y,Z])
+<br><code class="prm">to</code> <span class="typ">string|number[]</span>    - destination white point
+<br><code class="prm">[out]</code> <span class="typ">number[]</span>        - optional output array
+@param {{cat?: 'bradford'|'cat02'|'cat16'|'vonkries'|'xyz-scaling'}} [opts]</p></article>
+<article id="adaptMatrix"><h4><code>adaptMatrix</code> <span class="src">lab/adapt.js</span></h4><p>Resolve a white point argument to XYZ (Y = 1) plus a stable cache key.
+Accepts: an illuminant name ('D65', 'A', …), an [x, y] chromaticity,
+or a full [X, Y, Z] tristimulus.
+/
+const _namedWhites = new Map();</p><p>function resolveWhite(w) {
+  if (typeof w === 'string') {
+    let r = _namedWhites.get(w);
+    if (!r) {
+      const xy = illuminants[w];
+      if (!xy) throw new Error(<code>whitepoint: unknown illuminant "${w}" (have: ${Object.keys(illuminants).join(', ')})</code>);
+      _namedWhites.set(w, (r = { key: w, xyz: xyToXyz(xy) }));
+    }
+    return r;
+  }
+  if (w.length === 2) {
+    return { key: <code>xy:${w[0]},${w[1]}</code>, xyz: xyToXyz(w) };
+  }
+  return { key: <code>xyz:${w[0]},${w[1]},${w[2]}</code>, xyz: w };
+}</p><p>const _matrixCache = new Map();</p><p>/**
+The 3×3 adaptation matrix from one white point to another.
+Cached per (cat, src, dst). Useful directly for precomposition.</p></article>
+<article id="illuminants"><h4><code>illuminants</code> <span class="src">constants/whitepoints.js</span></h4><p>CIE illuminant chromaticities (CIE 15:2004): A, B, C, D50–D75, E, F2/F7/F11.</p></article>
+<article id="illuminantFromCCT"><h4><code>illuminantFromCCT</code> <span class="src">lab/cct.js</span></h4><p>XYZ (Y = 1) white point of CIE daylight at temperature T — usable directly
+as a white point argument to adapt().</p></article>
+<article id="daylightXy"><h4><code>daylightXy</code> <span class="src">lab/cct.js</span></h4><p>xy chromaticity of CIE standard daylight at correlated color temperature T.
+<br><code class="prm">T</code> <span class="typ">number</span> kelvin, 4000–25000
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="cats"><h4><code>cats</code> <span class="src">constants/cats.js</span></h4><p>Chromatic adaptation cone matrices: bradford, cat02, cat16, vonkries, xyz-scaling.</p></article>
+<article id="xyToXyz"><h4><code>xyToXyz</code> <span class="src">constants/whitepoints.js</span></h4><p>xy chromaticity → XYZ tristimulus with Y = 1.</p></article>
+<article id="CSS_D50"><h4><code>CSS_D50</code> <span class="src">constants/whitepoints.js</span></h4><p>CSS Color 4 §10 D50 (4-digit).</p></article>
+<article id="CSS_D65"><h4><code>CSS_D65</code> <span class="src">constants/whitepoints.js</span></h4><p>CSS Color 4 §10 white points — the 4-digit chromaticities the CSS spec normalizes to.</p></article>
+<article id="CSS_D50_XYZ"><h4><code>CSS_D50_XYZ</code> <span class="src">constants/whitepoints.js</span></h4><p>CSS D50 as XYZ tristimulus (Y = 1).</p></article>
+<article id="CSS_D65_XYZ"><h4><code>CSS_D65_XYZ</code> <span class="src">constants/whitepoints.js</span></h4><p>CSS D65 as XYZ tristimulus (Y = 1).</p></article>
+</section>
+
+<section>
+  <h3>Gamut <span class="mod">whitepoint</span></h3>
+  <article id="toGamut"><h4><code>toGamut</code> <span class="src">gamut/index.js</span></h4><p>Map a color into a bounded RGB gamut. Input and output are in <code>space</code>.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> 
+<br><code class="prm">space</code> <span class="typ">object|string</span> the space <code>coords</code> is expressed in
+@param {{gamut?: object|string, method?: 'css'|'cusp'|'clip'}} [opts]
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="inGamut"><h4><code>inGamut</code> <span class="src">gamut/index.js</span></h4><p>Is a color inside the gamut of a bounded RGB space?</p></article>
+<article id="clip"><h4><code>clip</code> <span class="src">gamut/index.js</span></h4><p>Per-channel clamp to [0, 1] (in gamut-space coordinates).</p></article>
+<article id="findCusp"><h4><code>findCusp</code> <span class="src">gamut/index.js</span></h4><p>The OKLCH gamut cusp (L, C) at hue h — exact channel-zero cubic, centidegree-cached.</p></article>
+<article id="findCuspNumerical"><h4><code>findCuspNumerical</code> <span class="src">gamut/index.js</span></h4><p>Ground-truth cusp by golden-section search over L with bisection on C,
+using full library conversions. Slow; exists to verify findCusp.</p></article>
+<article id="maxChromaAt"><h4><code>maxChromaAt</code> <span class="src">gamut/index.js</span></h4><p>Exact maximum in-gamut chroma at a fixed OKLCH lightness and hue —
+bracketed bisection on the channel cubics (checking both 0 and 1 bounds).
+The exact counterpart of Ottosson's find_gamut_intersection along
+constant L; used by OKHSL.</p></article>
+<article id="deltaEOK"><h4><code>deltaEOK</code> <span class="src">gamut/index.js</span></h4><p>Euclidean distance in OKLab — the deltaE of CSS Color 4 gamut mapping.</p></article>
+</section>
+
+<section>
+  <h3>Mixing & difference <span class="mod">whitepoint</span></h3>
+  <article id="mix"><h4><code>mix</code> <span class="src">ops/mix.js</span></h4><p>Mix two colors (both in <code>space</code>) at parameter t per CSS Color 4 §12.</p><p><br><code class="prm">a</code> <span class="typ">number[]</span> coordinates in <code>space</code>
+<br><code class="prm">b</code> <span class="typ">number[]</span> coordinates in <code>space</code>
+<br><code class="prm">t</code> <span class="typ">number</span> 0 → a, 1 → b
+<br><code class="prm">space</code> <span class="typ">object|string</span> 
+@param {{hue?: 'shorter'|'longer'|'increasing'|'decreasing'}} [opts]
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="mixAlpha"><h4><code>mixAlpha</code> <span class="src">ops/mix.js</span></h4><p>Premultiplied-alpha mix per CSS Color 4 §12.3. Inputs and output are
+length-4: [c0, c1, c2, alpha]. Non-hue coordinates are weighted by alpha
+before interpolation and unweighted after; hue is never premultiplied.
+When the interpolated alpha is 0, coordinates interpolate unweighted
+(the spec's 0/0 case — the color is fully transparent either way).</p></article>
+<article id="hueDelta"><h4><code>hueDelta</code> <span class="src">ops/mix.js</span></h4><p>Hue delta per CSS Color 4 §12.4, from normalized hues.</p></article>
+<article id="deltaE2000"><h4><code>deltaE2000</code> <span class="src">ops/diff.js</span></h4><p><br><code class="prm">lab1</code> <span class="typ">number[]</span> CIE Lab
+<br><code class="prm">lab2</code> <span class="typ">number[]</span> CIE Lab
+@param {{kL?: number, kC?: number, kH?: number}} [weights] - parametric factors (default 1)</p></article>
+<article id="deltaECAM16"><h4><code>deltaECAM16</code> <span class="src">ops/diff.js</span></h4><p>CAM16-UCS color difference ΔE′ (Li et al. 2017): Euclidean distance in
+CAM16-UCS under the default viewing conditions.</p><p><br><code class="prm">a</code> <span class="typ">number[]</span> coordinates in <code>space</code>
+<br><code class="prm">b</code> <span class="typ">number[]</span> coordinates in <code>space</code>
+<br><code class="prm">[space]</code> <span class="typ">object|string</span> the space a and b are expressed in</p></article>
+<article id="serialize"><h4><code>serialize</code> <span class="src">ops/serialize.js</span></h4><p>Serialize coordinates in <code>space</code> to a CSS color string.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> 
+<br><code class="prm">space</code> <span class="typ">object|string</span> 
+@param {{alpha?: number, precision?: number}} [opts]</p></article>
+<article id="contrastWCAG2"><h4><code>contrastWCAG2</code> <span class="src">ops/contrast.js</span></h4><p>WCAG 2.x contrast ratio (1–21) between two colors in <code>space</code>.
+WCAG is defined on sRGB; other spaces are converted (and clipped — WCAG
+has no notion of out-of-gamut color).</p></article>
+<article id="wcagLuminance"><h4><code>wcagLuminance</code> <span class="src">ops/contrast.js</span></h4><p>WCAG 2.x relative luminance of gamma sRGB coordinates (0–1, clipped).</p></article>
+</section>
+
+<section>
+  <h3>Compositing & blending <span class="mod">whitepoint</span></h3>
+  <article id="composite"><h4><code>composite</code> <span class="src">ops/composite.js</span></h4><p>Porter-Duff compositing of PREMULTIPLIED colors.</p><p><br><code class="prm">srcP</code> <span class="typ">number[]</span> premultiplied [c0,c1,c2,a]
+<br><code class="prm">dstP</code> <span class="typ">number[]</span> premultiplied [c0,c1,c2,a]
+<br><code class="prm">[op]</code> <span class="typ">string</span> operator (default 'source-over')
+<br><code class="prm">[space]</code> <span class="typ">object|string</span> rectangular space (default 'srgb-linear')
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="overStack"><h4><code>overStack</code> <span class="src">ops/composite.js</span></h4><p>Source-over of an entire layer stack (layers[0] on top), PREMULTIPLIED,
+via the closed form — one accumulation, no intermediate composites.</p></article>
+<article id="premultiply"><h4><code>premultiply</code> <span class="src">ops/composite.js</span></h4><p>Straight [c0,c1,c2,a] → premultiplied.</p></article>
+<article id="unpremultiply"><h4><code>unpremultiply</code> <span class="src">ops/composite.js</span></h4><p>Premultiplied → straight. The division amplifies relative error by 1/alpha;
+at alpha = 0 the color is undefined and channels are passed through.</p></article>
+<article id="porterDuffOperators"><h4><code>porterDuffOperators</code> <span class="src">ops/composite.js</span></h4><p>The 13 Porter–Duff operator names composite() accepts.</p></article>
+<article id="blend"><h4><code>blend</code> <span class="src">ops/composite.js</span></h4><p>W3C blend-then-composite (source-over), on STRAIGHT-alpha colors, per the
+spec's general formula: Cs′ = (1−αb)·Cs + αb·B(Cb, Cs).
+The spec defines blending on gamma sRGB (the default here); other
+rectangular spaces are accepted for deliberate off-label use.</p><p><br><code class="prm">src</code> <span class="typ">number[]</span> straight [c0,c1,c2,a]
+<br><code class="prm">dst</code> <span class="typ">number[]</span> straight backdrop [c0,c1,c2,a]</p></article>
+<article id="blendModes"><h4><code>blendModes</code> <span class="src">ops/composite.js</span></h4><p>The 16 W3C blend mode names blend() accepts.</p></article>
+</section>
+
+<section>
+  <h3>Appearance (CAM16) <span class="mod">whitepoint</span></h3>
+  <article id="cam16ViewingConditions"><h4><code>cam16ViewingConditions</code> <span class="src">spaces/cam16.js</span></h4><p>Precompute CAM16 viewing conditions.
+@param {{white?: number[], adaptingLuminance?: number, backgroundLstar?: number,
+         surround?: 'average'|'dim'|'dark', discounting?: boolean}} [opts]
+  white is XYZ scaled to Y=100.</p></article>
+<article id="xyzToCam16"><h4><code>xyzToCam16</code> <span class="src">spaces/cam16.js</span></h4><p>XYZ (Y scale 0–100) → CAM16 [J, C, h] under viewing conditions vc.</p></article>
+<article id="cam16ToXyz"><h4><code>cam16ToXyz</code> <span class="src">spaces/cam16.js</span></h4><p>CAM16 [J, C, h] → XYZ (Y scale 0–100).</p></article>
+<article id="CAM16_DEFAULT_VC"><h4><code>CAM16_DEFAULT_VC</code> <span class="src">spaces/cam16.js</span></h4><p>The registry default viewing conditions — cam16ViewingConditions() with no overrides.</p></article>
+</section>
+
+<section>
+  <h3>Device boundaries <span class="mod">whitepoint</span></h3>
+  <article id="cmykFromSrgb"><h4><code>cmykFromSrgb</code> <span class="src">ops/device.js</span></h4><p>gamma sRGB → naive [C, M, Y, K].</p></article>
+<article id="srgbFromCmyk"><h4><code>srgbFromCmyk</code> <span class="src">ops/device.js</span></h4><p>naive [C, M, Y, K] → gamma sRGB.</p></article>
+<article id="ansi16FromSrgb"><h4><code>ansi16FromSrgb</code> <span class="src">ops/device.js</span></h4><p>Nearest standard ANSI-16 index by deltaEOK.</p></article>
+<article id="ansi256FromSrgb"><h4><code>ansi256FromSrgb</code> <span class="src">ops/device.js</span></h4><p>Quantize gamma sRGB to the nearest ANSI-256 index, choosing between the
+6×6×6 cube and the 24-step gray ramp by deltaEOK (perceptual, not
+channel-wise). Indices 0–15 are never produced — they are theme-dependent
+in real terminals.</p></article>
+<article id="srgbFromAnsi256"><h4><code>srgbFromAnsi256</code> <span class="src">ops/device.js</span></h4><p>ANSI-256 index → gamma sRGB.</p></article>
+</section>
+
+<section>
+  <h3>Direct space routes <span class="mod">whitepoint</span></h3>
+  <article id="srgbToHsl"><h4><code>srgbToHsl</code> <span class="src">spaces/hsl.js</span></h4><p>gamma sRGB → [H, S, L]</p></article>
+<article id="hslToSrgb"><h4><code>hslToSrgb</code> <span class="src">spaces/hsl.js</span></h4><p>[H, S, L] → gamma sRGB, CSS Color 4 §7.1 algorithm.</p></article>
+<article id="srgbToHsv"><h4><code>srgbToHsv</code> <span class="src">spaces/hsv.js</span></h4><p>sRGB → HSV (hue degrees, s/v 0–1), the direct hexcone route.</p></article>
+<article id="hsvToSrgb"><h4><code>hsvToSrgb</code> <span class="src">spaces/hsv.js</span></h4><p>HSV → sRGB, inverse of srgbToHsv.</p></article>
+<article id="srgbToHsi"><h4><code>srgbToHsi</code> <span class="src">spaces/hsv.js</span></h4><p>sRGB → HSI (intensity = mean of channels — the classic image-processing variant).</p></article>
+<article id="hsiToSrgb"><h4><code>hsiToSrgb</code> <span class="src">spaces/hsv.js</span></h4><p>HSI → sRGB, inverse of srgbToHsi.</p></article>
+<article id="srgbToHwb"><h4><code>srgbToHwb</code> <span class="src">spaces/hsl.js</span></h4><p>gamma sRGB → [H, W, B]</p></article>
+<article id="hwbToSrgb"><h4><code>hwbToSrgb</code> <span class="src">spaces/hsl.js</span></h4><p>[H, W, B] → gamma sRGB, CSS Color 4 §8.2</p></article>
+</section>
+
+<section>
+  <h3>Math & internals <span class="mod">whitepoint</span></h3>
+  <article id="mul"><h4><code>mul</code> <span class="src">core/mat3.js</span></h4><p>3×3 matrix product a·b.</p></article>
+<article id="mulVec"><h4><code>mulVec</code> <span class="src">core/mat3.js</span></h4><p>3×3 matrix × column vector.</p></article>
+<article id="invert"><h4><code>invert</code> <span class="src">core/mat3.js</span></h4><p>Exact 3×3 inverse via adjugate over determinant — how every CAT inverse is computed.</p></article>
+<article id="deriveRgbMatrices"><h4><code>deriveRgbMatrices</code> <span class="src">core/derive.js</span></h4><p>@param {{r:[number,number], g:[number,number], b:[number,number], white:[number,number]}} def
+<br><b>returns</b> <span class="typ">{{ toXyz: number[], fromXyz: number[], whiteXyz: number[] }</span> }</p></article>
+<article id="polarToRect"><h4><code>polarToRect</code> <span class="src">core/polar.js</span></h4><p>[L, C, H] → [L, a, b]</p></article>
+<article id="rectToPolar"><h4><code>rectToPolar</code> <span class="src">core/polar.js</span></h4><p>[L, a, b] → [L, C, H]</p></article>
+<article id="transfer"><h4><code>transfer</code> <span class="src">constants/transfer.js</span></h4><p>Transfer-function registry: named encode/decode pairs for every RGB space EOTF/OETF.</p></article>
+<article id="pqDecode"><h4><code>pqDecode</code> <span class="src">constants/hdr.js</span></h4><p>PQ signal (0–1) → absolute luminance (cd/m²). EOTF.</p></article>
+<article id="pqEncode"><h4><code>pqEncode</code> <span class="src">constants/hdr.js</span></h4><p>Absolute luminance (cd/m², ≥0) → PQ signal (0–1). Inverse EOTF.</p></article>
+<article id="DEG2RAD"><h4><code>DEG2RAD</code> <span class="src">core/polar.js</span></h4><p>Degrees → radians.</p></article>
+<article id="RAD2DEG"><h4><code>RAD2DEG</code> <span class="src">core/polar.js</span></h4><p>Radians → degrees.</p></article>
+<article id="YW"><h4><code>YW</code> <span class="src">constants/hdr.js</span></h4><p>BT.2408 reference (graphics/diffuse) white, 203 cd/m² — the HDR signal anchor.</p></article>
+</section>
+
+<section>
+  <h3>Shader emission <span class="mod">whitepoint/codegen</span></h3>
+  <article id="glsl"><h4><code>glsl</code> <span class="src">codegen/index.js</span></h4><p>GLSL ES 3.00 source for a from→to conversion (declare <code>precision highp float;</code>).</p></article>
+<article id="glslBlend"><h4><code>glslBlend</code> <span class="src">codegen/index.js</span></h4><p>GLSL blend-then-composite (source-over) for a W3C blend mode, straight-alpha vec4.</p></article>
+<article id="glslComposite"><h4><code>glslComposite</code> <span class="src">codegen/index.js</span></h4><p>GLSL Porter-Duff compositor over premultiplied vec4.</p></article>
+<article id="glslGamutMap"><h4><code>glslGamutMap</code> <span class="src">codegen/index.js</span></h4><p>GLSL gamut mapper: OKLCH in, gamut-mapped RGB (in <code>gamut</code> coords) out.</p></article>
+<article id="glslMix"><h4><code>glslMix</code> <span class="src">codegen/index.js</span></h4><p>GLSL mixer for a space with a CSS Color 4 hue interpolation method.</p></article>
+<article id="js"><h4><code>js</code> <span class="src">codegen/index.js</span></h4><p>JavaScript source for a standalone, dependency-free from→to function.</p></article>
+<article id="jsBlend"><h4><code>jsBlend</code> <span class="src">codegen/index.js</span></h4><p>Standalone JS blend (parity-tested against the library in CI).</p></article>
+<article id="jsComposite"><h4><code>jsComposite</code> <span class="src">codegen/index.js</span></h4><p>Standalone JS Porter-Duff compositor (parity-tested in CI).</p></article>
+<article id="jsGamutMap"><h4><code>jsGamutMap</code> <span class="src">codegen/index.js</span></h4><p>Standalone JS gamut mapper (used for parity testing the shader logic).</p></article>
+<article id="jsMix"><h4><code>jsMix</code> <span class="src">codegen/index.js</span></h4><p>Standalone JS mixer (parity-tested against the library mix in CI).</p></article>
+<article id="specialPairs"><h4><code>specialPairs</code> <span class="src">codegen/special.js</span></h4><p>The hand-templated emitter pairs (solver spaces + CAM16) available beyond op-chains.</p></article>
+<article id="supported"><h4><code>supported</code> <span class="src">codegen/index.js</span></h4><p>Space ids available to the codegen pipeline.</p></article>
+<article id="wgsl"><h4><code>wgsl</code> <span class="src">codegen/index.js</span></h4><p>WGSL source for a from→to conversion.</p></article>
+<article id="wgslBlend"><h4><code>wgslBlend</code> <span class="src">codegen/index.js</span></h4><p>WGSL blend.</p></article>
+<article id="wgslComposite"><h4><code>wgslComposite</code> <span class="src">codegen/index.js</span></h4><p>WGSL Porter-Duff compositor.</p></article>
+<article id="wgslGamutMap"><h4><code>wgslGamutMap</code> <span class="src">codegen/index.js</span></h4><p>WGSL gamut mapper.</p></article>
+<article id="wgslMix"><h4><code>wgslMix</code> <span class="src">codegen/index.js</span></h4><p>WGSL mixer.</p></article>
+</section>
+
+<section>
+  <h3>Spectra & CMFs <span class="mod">whitepoint/spectral</span></h3>
+  <article id="sampleSpd"><h4><code>sampleSpd</code> <span class="src">spectral/index.js</span></h4><p>Sample a uniform-grid spectrum at wavelength λ (nm), linear interpolation.</p></article>
+<article id="emissionToXyz"><h4><code>emissionToXyz</code> <span class="src">spectral/index.js</span></h4><p>Unnormalized tristimulus of an emission spectrum: X = Σ S(λ)·x̄(λ)·Δλ.
+Proportional values — normalize per your application (e.g. divide by Y
+for relative colorimetry, or use spectrumXy for chromaticity).</p></article>
+<article id="spectrumXy"><h4><code>spectrumXy</code> <span class="src">spectral/index.js</span></h4><p>xy chromaticity of a spectrum.</p></article>
+<article id="reflectanceToXyz"><h4><code>reflectanceToXyz</code> <span class="src">spectral/index.js</span></h4><p>Hub-ready XYZ (Y = 1 for the perfect reflector) of a reflectance spectrum
+under an illuminant: the canonical CIE 015 object-color computation,
+  X = k·Σ R(λ)·S(λ)·x̄(λ)·Δλ,  k = 1 / Σ S(λ)·ȳ(λ)·Δλ.
+The result feeds convert()/adapt() directly.</p></article>
+<article id="CMF_1931_2"><h4><code>CMF_1931_2</code> <span class="src">spectral/data.js</span></h4><p>CIE 1931 2° standard observer CMFs, 5 nm, 360–830 nm (CVRL).</p></article>
+<article id="CMF_1964_10"><h4><code>CMF_1964_10</code> <span class="src">spectral/data.js</span></h4><p>CIE 1964 10° standard observer CMFs, 5 nm (CVRL).</p></article>
+<article id="D65_SPD"><h4><code>D65_SPD</code> <span class="src">spectral/data.js</span></h4><p>CIE standard illuminant D65 relative SPD, 1 nm, 300–830 nm (CVRL).</p></article>
+<article id="DAYLIGHT_S"><h4><code>DAYLIGHT_S</code> <span class="src">spectral/data.js</span></h4><p>CIE daylight basis functions (CIE 015 Table 6), 5 nm.</p></article>
+<article id="FL2_SPD"><h4><code>FL2_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F2 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
+<article id="FL7_SPD"><h4><code>FL7_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F7 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
+<article id="FL11_SPD"><h4><code>FL11_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F11 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
+</section>
+
+<section>
+  <h3>Illuminant synthesis <span class="mod">whitepoint/spectral</span></h3>
+  <article id="planckianSPD"><h4><code>planckianSPD</code> <span class="src">spectral/index.js</span></h4><p>Relative SPD of a Planckian (blackbody) radiator at temperature T,
+normalized to 1 at 560 nm per CIE convention. Pure physics, no fit.</p></article>
+<article id="planckianXy"><h4><code>planckianXy</code> <span class="src">spectral/index.js</span></h4><p>The TRUE Planckian locus: blackbody chromaticity by integration of
+Planck's law against the CMFs. Replaces fitted approximations entirely.
+Valid wherever Planck's law is (any positive T).</p></article>
+<article id="illuminantASPD"><h4><code>illuminantASPD</code> <span class="src">spectral/index.js</span></h4><p>CIE standard illuminant A: a Planckian radiator at 2856 K (CIE 015).</p></article>
+<article id="daylightSPD"><h4><code>daylightSPD</code> <span class="src">spectral/index.js</span></h4><p>Relative SPD of CIE daylight at correlated color temperature T
+(4000–25000 K), synthesized from the S0/S1/S2 basis functions with
+weights M1/M2 from the daylight-locus chromaticity.</p></article>
+<article id="cctOf"><h4><code>cctOf</code> <span class="src">spectral/index.js</span></h4><p>Correlated color temperature and Duv of a chromaticity — solved by
+minimizing CIE 1960 uv distance to this library's EXACT Planckian locus
+(Planck's law integrated against the CMFs), not a fitted approximation
+like McCamy. Duv is signed: positive above the locus (greenish), negative
+below (pinkish). CCT is conventionally meaningful for |duv| ≲ 0.05.</p><p><br><code class="prm">xy</code> <span class="typ">number[]</span> chromaticity
+<br><b>returns</b> <span class="typ">{{cct: number, duv: number}</span> }</p></article>
+<article id="lineSPD"><h4><code>lineSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a set of emission lines, each [λ_center nm, power], as Gaussian
+profiles whose integrals equal the line powers. Real discharge lines are
+~0.1 nm wide; the default 2 nm FWHM is the narrowest a 1 nm grid sums
+exactly (discrete-integral aliasing &lt; 2e-6 by Poisson summation, vs ~5%
+at 1 nm FWHM), and chromaticity is insensitive to width at this scale.
+Integrate against the 1 nm CMFs (whitepoint/spectral-1nm) for spiky
+spectra.</p></article>
+<article id="sodiumSPD"><h4><code>sodiumSPD</code> <span class="src">spectral/index.js</span></h4><p>Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
+D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
+intensity ratio. The canonical near-monochromatic illuminant — under it,
+color appearance collapses to a single hue.</p></article>
+</section>
+
+<section>
+  <h3>Lamp quality <span class="mod">whitepoint/spectral</span></h3>
+  <article id="cri"><h4><code>cri</code> <span class="src">spectral/quality.js</span></h4><p>CIE 13.3-1995 color rendering index of a light-source SPD.
+Reference is a Planckian radiator below 5000 K, CIE daylight at or
+above. Ra is the mean of R1–R8; the specials R9–R14 (R9 = strong red,
+the famous LED-killer) ride along in <code>Ri</code>. CRI is conventionally
+meaningful only near the locus (|duv| &lt; 0.0054 per the spec) — the duv
+is returned so you can judge.</p><p>@param {{start:number, step:number, values:number[]}} spd
+<br><b>returns</b> <span class="typ">{{Ra:number, Ri:number[], cct:number, duv:number}</span> }</p></article>
+<article id="tm30"><h4><code>tm30</code> <span class="src">spectral/quality.js</span></h4><p>IES TM-30-20 / CIE 224:2017 color fidelity of a light-source SPD:
+fidelity index Rf (0–100, CAM02-UCS distance over 99 spectrally
+representative CES) and gamut index Rg (100 = reference gamut area;
+below = desaturating, above = oversaturating). The modern, vastly more
+robust successor to CRI.</p><p>@param {{start:number, step:number, values:number[]}} spd
+<br><b>returns</b> <span class="typ">{{Rf:number, Rg:number, cct:number, duv:number}</span> }</p></article>
+<article id="cam02ViewingConditions"><h4><code>cam02ViewingConditions</code> <span class="src">spectral/quality.js</span></h4><p>Precompute CIECAM02 viewing conditions. Surround is <code>average</code>
+(F = 1, c = 0.69, Nc = 1); pass discountIlluminant for D = 1.</p></article>
+<article id="xyzToCam02Ucs"><h4><code>xyzToCam02Ucs</code> <span class="src">spectral/quality.js</span></h4><p>CIECAM02 → CAM02-UCS J′a′b′ for XYZ on the 0–100 scale. The forward
+model only — exactly what CIE 224 / TM-30 needs.</p></article>
+</section>
+
+<section>
+  <h3>Vision & media <span class="mod">whitepoint/spectral</span></h3>
+  <article id="simulateCVD"><h4><code>simulateCVD</code> <span class="src">spectral/cvd.js</span></h4><p>Simulate color vision deficiency. Input/output in <code>space</code>.</p><p><br><code class="prm">coords</code> <span class="typ">number[]</span> 
+<br><code class="prm">space</code> <span class="typ">object|string</span> 
+@param {{type: 'protanopia'|'deuteranopia'|'tritanopia', severity?: number}} opts
+<br><code class="prm">[out]</code> <span class="typ">number[]</span> </p></article>
+<article id="photopicLuminance"><h4><code>photopicLuminance</code> <span class="src">spectral/index.js</span></h4><p>Photopic luminance of a spectral radiance distribution:
+Lp = Km·Σ S(λ)·V(λ)·Δλ, with V(λ) = the CMF ȳ. If S is in
+W·m⁻²·sr⁻¹·nm⁻¹ the result is cd/m²; relative input gives relative output.</p></article>
+<article id="scotopicLuminance"><h4><code>scotopicLuminance</code> <span class="src">spectral/index.js</span></h4><p>Scotopic (rod-vision) luminance: Ls = K′m·Σ S(λ)·V′(λ)·Δλ, with the
+CIE 1951 scotopic efficiency V′(λ). Same units convention as
+photopicLuminance. The two agree by construction on a 555 nm line —
+that anchor is verified in the test suite, not assumed.</p></article>
+<article id="mesopic"><h4><code>mesopic</code> <span class="src">spectral/index.js</span></h4><p>CIE 191:2010 recommended system for mesopic photometry (MES2): the rod/
+cone blend weight m and mesopic luminance for given photopic and scotopic
+luminances (cd/m²). m = 1 at and above 5 cd/m² (cones only), m = 0 at and
+below 0.005 cd/m² (rods only); between, m solves the spec's implicit
+equation by its published iteration. The constants 0.7670 and 0.3334 are
+the spec's rounded solutions of those two endpoint conditions.</p><p><br><b>returns</b> <span class="typ">{{m: number, luminance: number}</span> }</p></article>
+<article id="V_PRIME_1951"><h4><code>V_PRIME_1951</code> <span class="src">spectral/data-scotopic.js</span></h4><p>CIE (1951) scotopic luminous efficiency function V′(λ), 1 nm,
+380–780 nm (CVRL). Peak at 507 nm; the rod sensitivity
+curve. Shaped like a CMF y-channel for use with the same samplers.</p></article>
+<article id="attenuate"><h4><code>attenuate</code> <span class="src">spectral/index.js</span></h4><p>Attenuate a spectrum through an absorbing medium: Beer–Lambert
+S(λ)·exp(−a(λ)·d). Pair with WATER_ABSORPTION (Pope &amp; Fry 1997, 1/m)
+and d in meters for underwater light; any absorption spectrum with
+reciprocal-length units works the same way.</p></article>
+<article id="WATER_ABSORPTION"><h4><code>WATER_ABSORPTION</code> <span class="src">spectral/data-water.js</span></h4><p>Spectral absorption coefficient of pure water, 1/m, 2.5 nm,
+380–727.5 nm. Pope &amp; Fry (1997), Appl. Opt. 36, 8710,
+integrating-cavity measurements (via OMLC). Beer–Lambert ready:
+T(λ, d) = exp(−a(λ)·d) with d in meters.</p></article>
+</section>
+
+<section>
+  <h3>Pigments (Kubelka–Munk) <span class="mod">whitepoint/spectral</span></h3>
+  <article id="reflectanceOf"><h4><code>reflectanceOf</code> <span class="src">spectral/pigment.js</span></h4><p>A plausible smooth reflectance spectrum for a color (Jakob–Hanika sigmoid,
+Newton-solved so it integrates back to the color's XYZ under D65 exactly).
+Cached per color.</p></article>
+<article id="kmMixReflectance"><h4><code>kmMixReflectance</code> <span class="src">spectral/pigment.js</span></h4><p>Kubelka–Munk mix of two reflectance spectra at concentration t
+(0 → all a, 1 → all b). Spectra must share a grid (reflectanceOf's do).</p></article>
+<article id="pigmentMix"><h4><code>pigmentMix</code> <span class="src">spectral/pigment.js</span></h4><p>Mix two colors as PIGMENTS (subtractive, Kubelka–Munk) rather than as
+light. Yellow + blue = green. Input/output in <code>space</code>; t is pigment
+concentration of b.</p></article>
+</section>
+
+<section>
+  <h3>Sky (Hosek–Wilkie) <span class="mod">whitepoint/sky</span></h3>
+  <article id="SKY_WL"><h4><code>SKY_WL</code> <span class="src">sky/data.js</span></h4><p>Band wavelengths, nm.</p></article>
+<article id="skyModel"><h4><code>skyModel</code> <span class="src">sky/index.js</span></h4><p>Precompute a sky state for given conditions. The returned object feeds
+skyRadiance/skySPD; reuse it across the whole dome.</p><p><br><code class="prm">opts</code> <span class="typ">object</span> 
+<br><code class="prm">opts.elevation</code> <span class="typ">number</span> solar elevation above horizon, radians (0–π/2)
+<br><code class="prm">[opts.turbidity</code> <span class="typ">number</span> =3] - Linke-style atmospheric turbidity (1–10)
+<br><code class="prm">[opts.albedo</code> <span class="typ">number</span> =0.1] - ground albedo (0–1)</p></article>
+<article id="skyRadiance"><h4><code>skyRadiance</code> <span class="src">sky/index.js</span></h4><p>Spectral sky radiance for a view direction, W·m⁻²·sr⁻¹·nm⁻¹.
+Linear interpolation between the model's 40 nm bands, exactly as the
+reference implementation does.</p><p><br><code class="prm">state</code> <span class="typ">object</span> from skyModel()
+<br><code class="prm">theta</code> <span class="typ">number</span> view zenith angle, radians (0 = zenith)
+<br><code class="prm">gamma</code> <span class="typ">number</span> angular distance from the sun, radians
+<br><code class="prm">wavelength</code> <span class="typ">number</span> nm (320–720; 0 outside)</p></article>
+<article id="skySPD"><h4><code>skySPD</code> <span class="src">sky/index.js</span></h4><p>The sky's SPD for a view direction, on a uniform grid ready for
+spectrumXy()/reflectanceToXyz()/cctOf(). Same units as skyRadiance.</p></article>
+<article id="sunRadiance"><h4><code>sunRadiance</code> <span class="src">sky/index.js</span></h4><p>Direct radiance of the solar disc itself, W·m⁻²·sr⁻¹·nm⁻¹ — zero
+outside the disc (angular radius 0.255°), limb-darkened within it
+(the sun is visibly dimmer and warmer at its edge; the model carries
+the astronomical 5th-order fit per band). The reference's
+<code>solar_radiance</code> is this plus skyRadiance — add them for a view that
+includes both the disc and the in-scattered sky.</p><p><br><code class="prm">state</code> <span class="typ">object</span> from skyModel()
+<br><code class="prm">theta</code> <span class="typ">number</span> view zenith angle, radians
+<br><code class="prm">gamma</code> <span class="typ">number</span> angular distance from the sun's center, radians
+<br><code class="prm">wavelength</code> <span class="typ">number</span> nm (320–720; 0 outside)</p></article>
+<article id="sunSPD"><h4><code>sunSPD</code> <span class="src">sky/index.js</span></h4><p>The direct sun's SPD for a view direction (disc only — add skySPD for
+the total). Default gamma 0 looks at the disc's center: the color of
+direct sunlight through this atmosphere.</p></article>
+</section>
+
+
+<footer style="margin-top: 4rem; color: var(--dim); font-size: 0.85rem">
+  <p>Regenerate with <code>node tools/build-api-page.js</code>.</p>
+</footer>
+</main>
+</body>
+</html>

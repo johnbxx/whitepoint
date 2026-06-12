@@ -22,6 +22,7 @@ export function xyToXyz(xy, out = [0, 0, 0]) {
 }
 
 // CIE 15:2004, Table T.3 (2° standard observer), as xy.
+/** CIE illuminant chromaticities (CIE 15:2004): A, B, C, D50–D75, E, F2/F7/F11. */
 export const illuminants = {
   A:   [0.44757, 0.40745], // incandescent / tungsten, 2856 K
   B:   [0.34842, 0.35161], // direct sunlight at noon (deprecated by CIE, kept for completeness)
@@ -37,8 +38,12 @@ export const illuminants = {
 };
 
 // CSS Color 4 §10 white points (4 digits, per the RGB space standards).
+/** CSS Color 4 §10 white points — the 4-digit chromaticities the CSS spec normalizes to. */
 export const CSS_D65 = [0.3127, 0.3290];
+/** CSS Color 4 §10 D50 (4-digit). */
 export const CSS_D50 = [0.3457, 0.3585];
 
+/** CSS D65 as XYZ tristimulus (Y = 1). */
 export const CSS_D65_XYZ = xyToXyz(CSS_D65);
+/** CSS D50 as XYZ tristimulus (Y = 1). */
 export const CSS_D50_XYZ = xyToXyz(CSS_D50);

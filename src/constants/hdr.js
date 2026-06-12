@@ -8,6 +8,7 @@
 // (ITU-R BT.2408 diffuse white) — the convention used across the ecosystem
 // (colorjs.io, culori), verified by differential tests.
 
+/** BT.2408 reference (graphics/diffuse) white, 203 cd/m² — the HDR signal anchor. */
 export const YW = 203; // cd/m², BT.2408 reference (diffuse/graphics) white
 
 // ---- SMPTE ST 2084 (PQ) ----

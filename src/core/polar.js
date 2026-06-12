@@ -2,7 +2,9 @@
 // Hue is degrees in [0, 360). Hue of an achromatic color (C = 0) is
 // mathematically undefined; we return 0 and document it, per CSS convention.
 
+/** Degrees → radians. */
 export const DEG2RAD = Math.PI / 180;
+/** Radians → degrees. */
 export const RAD2DEG = 180 / Math.PI;
 
 /** [L, a, b] → [L, C, H] */

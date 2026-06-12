@@ -1,6 +1,7 @@
 // 3×3 matrix utilities over flat row-major arrays [m00,m01,m02, m10,m11,m12, m20,m21,m22].
 // All functions accept an optional `out` to avoid allocation in hot paths.
 
+/** 3×3 matrix × column vector. */
 export function mulVec(m, v, out = [0, 0, 0]) {
   const x = v[0], y = v[1], z = v[2];
   out[0] = m[0] * x + m[1] * y + m[2] * z;
@@ -9,6 +10,7 @@ export function mulVec(m, v, out = [0, 0, 0]) {
   return out;
 }
 
+/** 3×3 matrix product a·b. */
 export function mul(a, b, out = new Array(9)) {
   const a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3], a4 = a[4], a5 = a[5], a6 = a[6], a7 = a[7], a8 = a[8];
   const b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4], b5 = b[5], b6 = b[6], b7 = b[7], b8 = b[8];
@@ -24,6 +26,7 @@ export function mul(a, b, out = new Array(9)) {
   return out;
 }
 
+/** Exact 3×3 inverse via adjugate over determinant — how every CAT inverse is computed. */
 export function invert(m, out = new Array(9)) {
   const a = m[0], b = m[1], c = m[2];
   const d = m[3], e = m[4], f = m[5];

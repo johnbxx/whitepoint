@@ -2,6 +2,7 @@
 // Each maps XYZ → a cone-like response space in which adaptation is modeled
 // as a diagonal (von Kries) scaling. Inverses are computed, never transcribed.
 
+/** Chromatic adaptation cone matrices: bradford, cat02, cat16, vonkries, xyz-scaling. */
 export const cats = {
   // Lam (1985), as adopted by ICC and CSS Color 4. The industry default.
   bradford: [
