@@ -85,4 +85,4 @@ library — its error bounds are published and CI-enforced.
 
 More worked examples: RECIPES.md in the package root
 (`node_modules/whitepoint/RECIPES.md`) or
-https://github.com/johnbxx/whitepoint/blob/main/RECIPES.md
+https://github.com/somejohnbforya/whitepoint/blob/main/RECIPES.md

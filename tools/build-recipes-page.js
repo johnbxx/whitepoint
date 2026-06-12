@@ -93,7 +93,7 @@ const page = `<!doctype html>
     <a href="./accuracy.html">accuracy</a>
     <a class="here" href="./recipes.html">recipes</a>
     <a href="https://www.npmjs.com/package/whitepoint">npm</a>
-    <a href="https://github.com/johnbxx/whitepoint">github</a>
+    <a href="https://github.com/somejohnbforya/whitepoint">github</a>
   </div>
 </div></nav>
 <main>

@@ -4,10 +4,10 @@
 > **Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.**
 
 [![npm](https://img.shields.io/npm/v/whitepoint)](https://www.npmjs.com/package/whitepoint)
-[![CI](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml/badge.svg)](https://github.com/johnbxx/whitepoint/actions/workflows/ci.yml)
-&nbsp;[**live demos**](https://johnbxx.github.io/whitepoint/)
-· [**measured accuracy**](https://johnbxx.github.io/whitepoint/accuracy.html)
-· [**recipes**](https://johnbxx.github.io/whitepoint/recipes.html)
+[![CI](https://github.com/somejohnbforya/whitepoint/actions/workflows/ci.yml/badge.svg)](https://github.com/somejohnbforya/whitepoint/actions/workflows/ci.yml)
+&nbsp;[**live demos**](https://somejohnbforya.github.io/whitepoint/)
+· [**measured accuracy**](https://somejohnbforya.github.io/whitepoint/accuracy.html)
+· [**recipes**](https://somejohnbforya.github.io/whitepoint/recipes.html)
 · [north star](./NORTHSTAR.md)
 
 Every conversion is generated from one table of cited constants. The matrix that
@@ -151,7 +151,7 @@ const state = skyModel({ elevation: 0.5, turbidity: 3, albedo: 0.1 });
 skySPD(state, theta, gamma);  // absolute spectral radiance, W·m⁻²·sr⁻¹·nm⁻¹
 ```
 
-All of it runs live in the [light lab](https://johnbxx.github.io/whitepoint/light.html):
+All of it runs live in the [light lab](https://somejohnbforya.github.io/whitepoint/light.html):
 the Mona Lisa under a sodium lamp, thirty meters of seawater, noon on Pluto
 (CIE 191 mesopic — it barely dims!), a Kubelka–Munk watercolor canvas you can
 repaint with weather, and the full sky dome.
