@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { deriveScene, swapGas, MATERIALS, GASES } from './spectra.js';
-import { buildAlley, refreshSurfaces, updateReflections, MAX_LIGHTS } from './scene.js';
+import { buildAlley, refreshSurfaces, updateReflections, updateSignColors, MAX_LIGHTS } from './scene.js';
 import { createPost } from './post.js';
 
 THREE.ColorManagement.enabled = false;
@@ -65,7 +65,9 @@ const ctx = {
   uMode,
   surfaceMats: [],
   reflectionMats: [],
+  clickables: [],
 };
+derived.lights.forEach((l, i) => { l.index = i; });
 
 const scene = buildAlley(ctx);
 const camera = new THREE.PerspectiveCamera(54, 1, 0.1, 80);
@@ -93,6 +95,7 @@ window.addEventListener('resize', () => {
     post.dispose?.();
     post = createPost(renderer, pw, ph, uMode);
     post.output.uniforms.uP3.value = isP3 ? 1 : 0;
+    post.output.uniforms.uSrgbPreview.value = state.srgbPreview ? 1 : 0;
   }
 });
 
@@ -127,6 +130,75 @@ function updateReadout() {
 }
 updateReadout();
 
+// ---- The gas picker: click a sign (3D or chip), choose a gas — the color
+// changes because the physics does.
+const swappable = derived.lights.filter((l) => l.gas && l.gas !== 'sodium-lamp');
+let selected = swappable[0];
+
+const tabsEl = document.getElementById('sign-tabs');
+const gasEl = document.getElementById('gas-row');
+const infoEl = document.getElementById('gas-info');
+
+function chip(label, on, fn, extra = '') {
+  const b = document.createElement('button');
+  b.className = `chip ${on ? 'on' : ''} ${extra}`;
+  b.textContent = label;
+  b.addEventListener('click', fn);
+  return b;
+}
+
+function renderPicker() {
+  if (!tabsEl || !gasEl) return;
+  tabsEl.replaceChildren(...swappable.map((l) =>
+    chip(l.name, l === selected, () => { selected = l; renderPicker(); })));
+  gasEl.replaceChildren(...Object.keys(GASES).map((gas) =>
+    chip(gas, selected.gas === gas, () => setGas(selected, gas))));
+  if (infoEl) infoEl.textContent = GASES[selected.gas] ?? '';
+}
+
+function setGas(light, gas) {
+  swapGas(derived, light.index, gas);
+  refreshSurfaces(ctx);
+  updateSignColors(light);
+  updateReadout();
+  renderPicker();
+}
+renderPicker();
+
+const raycaster = new THREE.Raycaster();
+canvas.addEventListener('click', (e) => {
+  const r = canvas.getBoundingClientRect();
+  const ndc = new THREE.Vector2(
+    ((e.clientX - r.left) / r.width) * 2 - 1,
+    -((e.clientY - r.top) / r.height) * 2 + 1,
+  );
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(ctx.clickables, false)[0];
+  if (hit?.object.userData.light && swappable.includes(hit.object.userData.light)) {
+    selected = hit.object.userData.light;
+    renderPicker();
+  }
+});
+
+// ---- Kill the neon: the whole alley collapses to sodium amber.
+const killBtn = document.getElementById('kill');
+killBtn?.addEventListener('click', () => {
+  state.sodiumOnly = !state.sodiumOnly;
+  killBtn.classList.toggle('on', state.sodiumOnly);
+  killBtn.textContent = state.sodiumOnly ? 'relight the neon' : 'kill the neon';
+});
+
+// ---- sRGB preview (only meaningful when the canvas really is P3).
+const srgbBtn = document.getElementById('srgb-preview');
+if (srgbBtn && isP3) {
+  srgbBtn.hidden = false;
+  srgbBtn.addEventListener('click', () => {
+    state.srgbPreview = !state.srgbPreview;
+    srgbBtn.classList.toggle('on', state.srgbPreview);
+    post.output.uniforms.uSrgbPreview.value = state.srgbPreview ? 1 : 0;
+  });
+}
+
 // ---- Deterministic flicker (no Math.random anywhere near the pixels).
 const fractf = (v) => v - Math.floor(v);
 const hash1 = (n) => fractf(Math.sin(n * 12.9898) * 43758.5453);
@@ -148,7 +220,7 @@ function frame() {
 
   derived.lights.forEach((l, i) => {
     const isSodium = l.gas === 'sodium-lamp';
-    const kill = state.sodiumOnly && !isSodium ? 0.02 : 1;
+    const kill = state.sodiumOnly && !isSodium ? 0 : 1;
     const f = flickerOf(i, t, l.name === 'live') * kill;
     l.flicker.value = f;
     shared.uIntensity.value[i] = l.intensity * f;

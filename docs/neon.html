@@ -46,6 +46,16 @@
   .switch input:checked ~ .knob { transform: translateX(32px); }
   #gamut-badge { font-family: var(--mono); font-size: 0.75rem; color: var(--dim); }
   #derived { font-family: var(--mono); font-size: 0.75rem; color: var(--dim); white-space: pre; overflow-x: auto; background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 0.8rem 1rem; margin-top: 1rem; }
+
+  .controls { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 0.9rem 1.2rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .crow { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .ctl-label { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); width: 2.6rem; flex: none; }
+  .chip { background: var(--bg); color: var(--text); border: 1px solid var(--edge); border-radius: 999px; padding: 0.3rem 0.8rem; font: inherit; font-size: 0.82rem; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.on { border-color: var(--accent); color: var(--accent); }
+  .chip.warn.on { border-color: #f7a14b; color: #f7a14b; }
+  #gas-info { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); }
+  .hint { font-size: 0.78rem; color: var(--dim); }
 </style>
 </head>
 <body data-mode="whitepoint">
@@ -86,6 +96,17 @@
     <span id="gamut-badge"></span>
   </div>
   <canvas id="alley"></canvas>
+  <div class="controls">
+    <div class="crow"><span class="ctl-label">sign</span><span id="sign-tabs" class="crow"></span>
+      <span class="hint">— or click a sign in the alley</span></div>
+    <div class="crow"><span class="ctl-label">gas</span><span id="gas-row" class="crow"></span></div>
+    <div class="crow"><span class="ctl-label"></span><span id="gas-info"></span></div>
+    <div class="crow">
+      <span class="ctl-label"></span>
+      <button class="chip warn" id="kill">kill the neon</button>
+      <button class="chip" id="srgb-preview" hidden>sRGB preview</button>
+    </div>
+  </div>
   <p class="fine">Same scene, same geometry, same lights. The naive side is what every
   web demo does: hand-picked sRGB hex, gamma-space mixing, channel-clipped output.
   The whitepoint side integrates NIST emission lines against the CIE observer at load

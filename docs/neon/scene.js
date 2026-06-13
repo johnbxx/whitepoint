@@ -211,6 +211,20 @@ export function surfaceMaterial(ctx, matA, matB = matA, opts = {}) {
   return mat;
 }
 
+/** Re-derive one sign's emissive look after a gas swap. */
+export function updateSignColors(light) {
+  for (const m of light.tubeMats ?? []) {
+    m.uniforms.uXyz.value.set(...light.xyz);
+    m.uniforms.uNaive.value.set(...light.naive);
+  }
+  if (light.haloMat) {
+    const { bright, dark } = haloLch(light);
+    light.haloMat.uniforms.uLchBright.value.set(...bright);
+    light.haloMat.uniforms.uLchDark.value.set(...dark);
+    light.haloMat.uniforms.uNaive.value.set(...light.naive.map((v) => v * 0.5));
+  }
+}
+
 /** Re-sync pair tables after a gas swap. */
 export function refreshSurfaces(ctx) {
   const { pairs, lights } = ctx.derived;
@@ -252,11 +266,16 @@ function emissiveMaterial(ctx, xyz, naive, power, { grad = 0, flicker } = {}) {
   });
 }
 
-function haloMaterial(ctx, sign, power) {
-  // Halo endpoints, derived per sign in JS by the same library: the tube
-  // color at glow luminance, and the same hue sunk to near-black.
-  const bright = convert(sign.xyz.map((v) => v * 0.32), 'xyz-d65', 'oklch');
+// Halo endpoints, derived per sign in JS by the same library: the tube
+// color at glow luminance, and the same hue sunk to near-black.
+function haloLch(light) {
+  const bright = convert(light.xyz.map((v) => v * 0.32), 'xyz-d65', 'oklch');
   const dark = [0.045, Math.min(bright[1] * 0.35, 0.04), bright[2]];
+  return { bright, dark };
+}
+
+function haloMaterial(ctx, sign, power) {
+  const { bright, dark } = haloLch(sign);
   return new THREE.ShaderMaterial({
     vertexShader: EMISSIVE_VERT,
     fragmentShader: haloFrag(),
@@ -288,7 +307,10 @@ function buildSign(ctx, sign, { scale, tubeR = 0.035, panelPad = 0.3, haloScale 
   sign.tubeMats = [tubeMat];
   const tubes = new THREE.Group();
   for (const geo of geometries) {
-    tubes.add(new THREE.Mesh(geo, tubeMat));
+    const mesh = new THREE.Mesh(geo, tubeMat);
+    mesh.userData.light = sign;
+    ctx.clickables.push(mesh);
+    tubes.add(mesh);
   }
   tubes.scale.setScalar(scale);
   tubes.position.set((-width / 2) * scale, -0.5 * scale, 0.1);
@@ -301,12 +323,15 @@ function buildSign(ctx, sign, { scale, tubeR = 0.035, panelPad = 0.3, haloScale 
     surfaceMaterial(ctx, 'panel'),
   );
   panel.position.set(0, 0.25 * scale, 0.02);
+  panel.userData.light = sign;
+  ctx.clickables.push(panel);
   group.add(panel);
 
   const halo = new THREE.Mesh(
     new THREE.PlaneGeometry(w * haloScale, h * haloScale),
     haloMaterial(ctx, sign, 0.3),
   );
+  sign.haloMat = halo.material;
   halo.position.set(0, 0.25 * scale, 0.075);
   group.add(halo);
 
