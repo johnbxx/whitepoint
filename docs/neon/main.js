@@ -258,6 +258,19 @@ killBtn?.addEventListener('click', () => {
   renderStatic();
 });
 
+// ---- Rain: wet vs dry asphalt is a reflectance swap, not a tint — the
+// pair tables already carry both spectra; uWetness blends them and scales
+// the mirrored-tube reflections.
+const rainBtn = document.getElementById('rain');
+rainBtn?.addEventListener('click', () => {
+  const wet = shared.uWetness.value < 0.4;
+  shared.uWetness.value = wet ? 0.85 : 0;
+  rainBtn.classList.toggle('on', wet);
+  rainBtn.setAttribute('aria-pressed', String(wet));
+  rainBtn.textContent = wet ? 'rain' : 'dry pavement';
+  renderStatic();
+});
+
 // ---- sRGB preview (only meaningful when the canvas really is P3).
 const srgbBtn = document.getElementById('srgb-preview');
 if (srgbBtn && isP3) {
