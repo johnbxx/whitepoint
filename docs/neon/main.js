@@ -211,10 +211,10 @@ function flickerOf(i, t, sputter) {
   return buzz * dropout;
 }
 
-// ---- Loop: fixed camera, slow deterministic drift.
-const t0 = performance.now();
-function frame() {
-  const t = (performance.now() - t0) / 1000;
+// ---- Loop: fixed camera, slow deterministic drift. tick(t) renders one
+// frame for a given clock — everything in it is a pure function of t, so
+// pixel verification can request exact, reproducible frames.
+function tick(t) {
   camera.position.set(0.26 * Math.sin(t * 0.07), 1.7 + 0.05 * Math.sin(t * 0.11), 7.4);
   camera.lookAt(0.1 * Math.sin(t * 0.05), 2.15, -6);
 
@@ -228,9 +228,19 @@ function frame() {
   updateReflections(ctx);
 
   post.render(scene, camera);
+}
+
+const t0 = performance.now();
+function frame() {
+  tick((performance.now() - t0) / 1000);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-// Exposed for the later interaction tasks (gas picker wiring).
-window.__alley = { ctx, swapGas: (i, gas) => { swapGas(derived, i, gas); refreshSurfaces(ctx); updateReadout(); }, state, GASES, post: () => post };
+// Exposed for the gas picker wiring and pixel verification.
+window.__alley = { ctx, swapGas: (i, gas) => { swapGas(derived, i, gas); refreshSurfaces(ctx); updateReadout(); }, state, GASES, tick, gl, post: () => post };
+
+// ?selftest — run the page's own claim checks (see selftest.js).
+if (location.search.includes('selftest')) {
+  import('./selftest.js').then((m) => m.selftest(window.__alley, canvas));
+}
