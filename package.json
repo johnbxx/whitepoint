@@ -50,7 +50,8 @@
     "alloc": "node --expose-gc tools/alloc-audit.js",
     "typecheck": "npx --yes --package typescript@5 tsc --noEmit --strict types.d.ts codegen.d.ts spectral.d.ts sky.d.ts spectral-1nm.d.ts",
     "site": "npx --yes esbuild docs/_entry.js --bundle --format=esm --minify --outfile=docs/whitepoint.js",
-    "docs": "node tools/build-recipes-page.js && node tools/build-api-page.js && npm run site"
+    "docs": "node tools/build-recipes-page.js && node tools/build-api-page.js && npm run site && npm run neon",
+    "neon": "npx --yes esbuild docs/neon/main.js --bundle --format=esm --minify --outfile=docs/neon.js"
   },
   "keywords": [
     "color",
@@ -86,6 +87,7 @@
     "colorjs.io": "^0.5.2",
     "culori": "^4.0.1",
     "hsluv": "^1.0.1",
-    "playwright": "^1.60.0"
+    "playwright": "^1.60.0",
+    "three": "0.184.0"
   }
 }
