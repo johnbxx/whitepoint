@@ -11,7 +11,7 @@ import assert from 'node:assert';
 import { existsSync, readFileSync } from 'node:fs';
 import {
   cri, tm30, cam02ViewingConditions, xyzToCam02Ucs,
-  planckianSPD, daylightSPD, sodiumSPD, illuminantASPD,
+  planckianSPD, daylightSPD, lowPressureSodiumSPD, illuminantASPD,
   FL2_SPD, FL7_SPD, FL11_SPD,
 } from '../src/spectral/index.js';
 
@@ -47,7 +47,7 @@ test('CRI reproduces the published F-series values', () => {
 });
 
 test('CRI of low-pressure sodium is catastrophic, as it should be', () => {
-  const { Ra, duv } = cri(sodiumSPD());
+  const { Ra, duv } = cri(lowPressureSodiumSPD());
   assert.ok(Ra < -20 && Ra > -80, `LPS Ra ${Ra} (published ≈ −44)`);
   assert.ok(Math.abs(duv) > 0.005, 'LPS sits well off the locus');
 });
@@ -62,7 +62,7 @@ test('TM-30: reference-vs-itself scores Rf = 100; D65 stays ≈ 100', () => {
 
 test('TM-30 orders the lamps sensibly', () => {
   const f2 = tm30(FL2_SPD), f7 = tm30(FL7_SPD), f11 = tm30(FL11_SPD);
-  const lps = tm30(sodiumSPD());
+  const lps = tm30(lowPressureSodiumSPD());
   assert.ok(f7.Rf > f11.Rf && f7.Rf > f2.Rf, `broadband F7 (${f7.Rf}) must beat F11 (${f11.Rf}) and F2 (${f2.Rf})`);
   for (const [name, r] of [['F2', f2], ['F7', f7], ['F11', f11]]) {
     assert.ok(r.Rf > 55 && r.Rf < 95, `${name} Rf ${r.Rf} in plausible band`);

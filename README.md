@@ -154,7 +154,7 @@ import {
   attenuate, WATER_ABSORPTION,             // Beer–Lambert; Pope & Fry 1997
   photopicLuminance, scotopicLuminance,    // Km·∫S·V and K′m·∫S·V′
   mesopic,                                 // CIE 191:2010 rod/cone blend
-  sodiumSPD, lineSPD,                      // emission lines (NIST D doublet)
+  lowPressureSodiumSPD, lineSPD,                      // emission lines (NIST D doublet)
 } from 'whitepoint/spectral';
 
 attenuate(D65_SPD, WATER_ABSORPTION, 12);  // daylight, 12 m underwater

@@ -6,7 +6,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert';
-import { emissionSPD, emissionColor, sodiumSPD, lineSPD, spectrumXy, EMISSION_LINES } from '../src/spectral/index.js';
+import { emissionSPD, emissionColor, lowPressureSodiumSPD, lineSPD, spectrumXy, EMISSION_LINES } from '../src/spectral/index.js';
 import { CMF_1931_2_1NM } from '../src/spectral/data-1nm.js';
 import { inGamut, convert } from '../src/index.js';
 import { findCusp } from '../src/gamut/index.js';
@@ -48,16 +48,16 @@ test('the strongest derived neon line is 640.2 nm, as observed in sign tubes', (
   assert.ok(Math.abs(powers[0][0] - 640.2248) < 0.01, `strongest: ${powers[0][0]}`);
 });
 
-test('Na I data carries the D doublet at the wavelengths sodiumSPD types', () => {
-  // The one place line constants are hand-typed (sodiumSPD) must agree
+test('Na I data carries the D doublet at the wavelengths lowPressureSodiumSPD types', () => {
+  // The one place line constants are hand-typed (lowPressureSodiumSPD) must agree
   // with the fetched data — the provenance chain closes on itself.
   for (const d of [588.9950, 589.5924]) {
     assert.ok(EMISSION_LINES.sodium.some(([wl]) => Math.abs(wl - d) < 1e-3), `D line ${d} missing`);
   }
 });
 
-test('full Na I discharge stays within 0.005 of the sodiumSPD doublet chromaticity', () => {
-  const lamp = spectrumXy(sodiumSPD(), { cmf: CMF_1931_2_1NM });
+test('full Na I discharge stays within 0.005 of the lowPressureSodiumSPD doublet chromaticity', () => {
+  const lamp = spectrumXy(lowPressureSodiumSPD(), { cmf: CMF_1931_2_1NM });
   const element = xyOf('sodium');
   assert.ok(Math.abs(lamp[0] - element[0]) < 0.005, `x: ${lamp[0]} vs ${element[0]}`);
   assert.ok(Math.abs(lamp[1] - element[1]) < 0.005, `y: ${lamp[1]} vs ${element[1]}`);
@@ -147,8 +147,8 @@ test('emissionColor name and data forms agree; kT shifts the result', () => {
   assert.notStrictEqual(cool[1], hot[1]); // chroma moves with excitation
 });
 
-test('lineSPD remains the open mechanism: a hand-built doublet matches sodiumSPD', () => {
-  const a = sodiumSPD();
+test('lineSPD remains the open mechanism: a hand-built doublet matches lowPressureSodiumSPD', () => {
+  const a = lowPressureSodiumSPD();
   const b = lineSPD([[588.9950, 2], [589.5924, 1]]);
   assert.deepStrictEqual(a.values, b.values);
 });

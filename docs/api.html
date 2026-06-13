@@ -354,6 +354,17 @@ for relative colorimetry, or use spectrumXy for chromaticity).</p></article>
 under an illuminant: the canonical CIE 015 object-color computation,
   X = k·Σ R(λ)·S(λ)·x̄(λ)·Δλ,  k = 1 / Σ S(λ)·ȳ(λ)·Δλ.
 The result feeds convert()/adapt() directly.</p></article>
+<article id="resample"><h4><code>resample</code> <span class="src">spectral/index.js</span></h4><p>Resample a uniform-grid spectrum onto a new grid by Sprague (1880)
+quintic interpolation — the method CIE 167:2005 recommends for spectral
+data tabulated at equal intervals. Exact at source nodes; interior
+segments (two nodes in from each end) reproduce polynomials through
+degree 4 to rounding and hit the analytic Planckian to ~4e-9 relative;
+the two segments at each end use the CIE 167 boundary polynomials,
+which are approximations tuned for spectra (~4e-4 on the Planckian) —
+prefer sources that extend a little past the range you need. Never
+extrapolates: the target grid must lie within the source range.
+Verified against colour-science's SpragueInterpolator and Planck's law
+in test/resample.test.js.</p></article>
 <article id="CMF_1931_2"><h4><code>CMF_1931_2</code> <span class="src">spectral/data.js</span></h4><p>CIE 1931 2° standard observer CMFs, 5 nm, 360–830 nm (CVRL).</p></article>
 <article id="CMF_1964_10"><h4><code>CMF_1964_10</code> <span class="src">spectral/data.js</span></h4><p>CIE 1964 10° standard observer CMFs, 5 nm (CVRL).</p></article>
 <article id="D65_SPD"><h4><code>D65_SPD</code> <span class="src">spectral/data.js</span></h4><p>CIE standard illuminant D65 relative SPD, 1 nm, 300–830 nm (CVRL).</p></article>
@@ -361,10 +372,15 @@ The result feeds convert()/adapt() directly.</p></article>
 <article id="FL2_SPD"><h4><code>FL2_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F2 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
 <article id="FL7_SPD"><h4><code>FL7_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F7 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
 <article id="FL11_SPD"><h4><code>FL11_SPD</code> <span class="src">spectral/data-fluorescent.js</span></h4><p>CIE F11 fluorescent illuminant relative SPD (CIE 015), 5 nm.</p></article>
+<article id="HP1_SPD"><h4><code>HP1_SPD</code> <span class="src">spectral/data-hp.js</span></h4><p>CIE HP1 illuminant relative SPD — standard high pressure sodium lamp (CIE 015), 5 nm.</p></article>
+<article id="HP2_SPD"><h4><code>HP2_SPD</code> <span class="src">spectral/data-hp.js</span></h4><p>CIE HP2 illuminant relative SPD — colour-enhanced high pressure sodium lamp (CIE 015), 5 nm.</p></article>
+<article id="HP3_SPD"><h4><code>HP3_SPD</code> <span class="src">spectral/data-hp.js</span></h4><p>CIE HP3 illuminant relative SPD — high pressure metal halide lamp (CIE 015), 5 nm.</p></article>
+<article id="HP4_SPD"><h4><code>HP4_SPD</code> <span class="src">spectral/data-hp.js</span></h4><p>CIE HP4 illuminant relative SPD — high pressure metal halide lamp (CIE 015), 5 nm.</p></article>
+<article id="HP5_SPD"><h4><code>HP5_SPD</code> <span class="src">spectral/data-hp.js</span></h4><p>CIE HP5 illuminant relative SPD — high pressure metal halide lamp (CIE 015), 5 nm.</p></article>
 </section>
 
 <section>
-  <h3>Illuminant synthesis <span class="mod">whitepoint/spectral</span></h3>
+  <h3>Illuminants & emitters <span class="mod">whitepoint/spectral</span></h3>
   <article id="planckianSPD"><h4><code>planckianSPD</code> <span class="src">spectral/index.js</span></h4><p>Relative SPD of a Planckian (blackbody) radiator at temperature T,
 normalized to 1 at 560 nm per CIE convention. Pure physics, no fit.</p></article>
 <article id="planckianXy"><h4><code>planckianXy</code> <span class="src">spectral/index.js</span></h4><p>The TRUE Planckian locus: blackbody chromaticity by integration of
@@ -380,6 +396,44 @@ minimizing CIE 1960 uv distance to this library's EXACT Planckian locus
 like McCamy. Duv is signed: positive above the locus (greenish), negative
 below (pinkish). CCT is conventionally meaningful for |duv| ≲ 0.05.</p><p><br><code class="prm">xy</code> <span class="typ">number[]</span> chromaticity
 <br><b>returns</b> <span class="typ">{{cct: number, duv: number}</span> }</p></article>
+<article id="lowPressureSodiumSPD"><h4><code>lowPressureSodiumSPD</code> <span class="src">spectral/index.js</span></h4><p>Low-pressure sodium (SOX) lamp: the Na D doublet, D2 588.9950 nm and
+D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
+intensity ratio. The canonical near-monochromatic illuminant — under it,
+color appearance collapses to a single hue.</p><p>Note this is NOT a CIE standard illuminant: the CIE standardizes only the
+*high*-pressure sodium lamps (HP1_SPD, HP2_SPD). It's a modeled idealized
+lamp, kept exact as two lines; for the full Na I line set under the
+discharge model see emissionSPD('sodium').</p></article>
+<article id="emissionColor"><h4><code>emissionColor</code> <span class="src">spectral/index.js</span></h4><p>The render-ready color of an atomic emitter, in one call — the spectral
+pipeline a web developer actually wants:</p><p>  emissionColor('neon')                          // → [0.63, 0.26, 33] oklch, sRGB-safe
+  emissionColor('neon', { gamut: 'display-p3' }) // → a redder neon a wide screen can show
+  emissionColor('argon', { to: 'srgb' })         // → sRGB coords, ready for a hex</p><p>The hue *and saturation* are the physics: emissionSPD → XYZ against the
+1 nm observer (so the spiky lines don't alias — the trap of the
+lower-level path) → the emitter's chromaticity. The color is returned at
+the chosen display's cusp *lightness* (as bright as that gamut allows for
+the hue — right for a glowing light), carrying the emitter's own chroma
+clamped to what the display can show. So saturated emitters land on the
+cusp (vivid neon) while pale ones stay pale (argon's lavender, not a
+cranked magenta) — never out of range. <code>gamut</code> picks the display (default
+'srgb'); a wider gamut shows the same hue with more chroma (the
+wide-gamut win, made literal). <code>to</code> is just the output coordinate space.</p><p>The physics is here, at load. For the GPU side, emit the matching color
+math with whitepoint/codegen (glsl, glslGamutMap) — same constants,
+parity-tested. This is a convenience over emissionSPD + emissionToXyz +
+findCusp + convert; every step stays individually exported.</p></article>
+<article id="emissionSPD"><h4><code>emissionSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a named atomic emitter, or of your own transition data, derived —
+not transcribed — from atomic physics: optically-thin emission with
+Boltzmann-populated upper levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT).</p><p>  emissionSPD('neon')               // a name from EMISSION_LINES
+  emissionSPD(EMISSION_LINES.neon)  // the same, data passed directly
+  emissionSPD(myLines)              // your own [λ_nm, g·A s⁻¹, E_k eV] rows</p><p>There is no standard illuminant for a neon sign — this is how you compute
+one. The same model fits any thermally-excited atomic emitter, a discharge
+tube or a flame metal (sodium, lithium…). kT is the excitation temperature
+in eV; the 0.5 eV default sits in the measured glow-discharge range, and
+since level energies dominate the line ratios, each emitter lands in its
+known color region across that whole range (neon red-orange x ≈ 0.67,
+argon lavender, mercury blue-white — pinned in test/lines.test.js).
+Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
+ASD's qualitative observed-intensity column is deliberately unused. The
+lines are spiky — integrate against the 1 nm observer (see emissionColor,
+or pass CMF_1931_2_1NM to spectrumXy/emissionToXyz).</p></article>
 <article id="lineSPD"><h4><code>lineSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a set of emission lines, each [λ_center nm, power], as Gaussian
 profiles whose integrals equal the line powers. Real discharge lines are
 ~0.1 nm wide; the default 2 nm FWHM is the narrowest a 1 nm grid sums
@@ -387,11 +441,7 @@ exactly (discrete-integral aliasing &lt; 2e-6 by Poisson summation, vs ~5%
 at 1 nm FWHM), and chromaticity is insensitive to width at this scale.
 Integrate against the 1 nm CMFs (whitepoint/spectral-1nm) for spiky
 spectra.</p></article>
-<article id="sodiumSPD"><h4><code>sodiumSPD</code> <span class="src">spectral/index.js</span></h4><p>Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
-D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
-intensity ratio. The canonical near-monochromatic illuminant — under it,
-color appearance collapses to a single hue. (The lamp model, kept exact;
-for the full Na I line set see emissionSPD('sodium').)</p></article>
+<article id="EMISSION_LINES"><h4><code>EMISSION_LINES</code> <span class="src">spectral/data-lines.js</span></h4><p>Emission-line transitions per element: arrays of [λ_air nm, g_k·A_ki s⁻¹, E_k eV].</p></article>
 </section>
 
 <section>
@@ -488,49 +538,7 @@ includes both the disc and the in-scattered sky.</p><p><br><code class="prm">sta
 the total). Default gamma 0 looks at the disc's center: the color of
 direct sunlight through this atmosphere.</p></article>
 </section>
-<section><h3>Ungrouped</h3><article id="EMISSION_LINES"><h4><code>EMISSION_LINES</code> <span class="src">spectral/data-lines.js</span></h4><p>Emission-line transitions per element: arrays of [λ_air nm, g_k·A_ki s⁻¹, E_k eV].</p></article>
-<article id="emissionColor"><h4><code>emissionColor</code> <span class="src">spectral/index.js</span></h4><p>The render-ready color of an atomic emitter, in one call — the spectral
-pipeline a web developer actually wants:</p><p>  emissionColor('neon')                          // → [0.63, 0.26, 33] oklch, sRGB-safe
-  emissionColor('neon', { gamut: 'display-p3' }) // → a redder neon a wide screen can show
-  emissionColor('argon', { to: 'srgb' })         // → sRGB coords, ready for a hex</p><p>The hue *and saturation* are the physics: emissionSPD → XYZ against the
-1 nm observer (so the spiky lines don't alias — the trap of the
-lower-level path) → the emitter's chromaticity. The color is returned at
-the chosen display's cusp *lightness* (as bright as that gamut allows for
-the hue — right for a glowing light), carrying the emitter's own chroma
-clamped to what the display can show. So saturated emitters land on the
-cusp (vivid neon) while pale ones stay pale (argon's lavender, not a
-cranked magenta) — never out of range. <code>gamut</code> picks the display (default
-'srgb'); a wider gamut shows the same hue with more chroma (the
-wide-gamut win, made literal). <code>to</code> is just the output coordinate space.</p><p>The physics is here, at load. For the GPU side, emit the matching color
-math with whitepoint/codegen (glsl, glslGamutMap) — same constants,
-parity-tested. This is a convenience over emissionSPD + emissionToXyz +
-findCusp + convert; every step stays individually exported.</p></article>
-<article id="emissionSPD"><h4><code>emissionSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a named atomic emitter, or of your own transition data, derived —
-not transcribed — from atomic physics: optically-thin emission with
-Boltzmann-populated upper levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT).</p><p>  emissionSPD('neon')               // a name from EMISSION_LINES
-  emissionSPD(EMISSION_LINES.neon)  // the same, data passed directly
-  emissionSPD(myLines)              // your own [λ_nm, g·A s⁻¹, E_k eV] rows</p><p>There is no standard illuminant for a neon sign — this is how you compute
-one. The same model fits any thermally-excited atomic emitter, a discharge
-tube or a flame metal (sodium, lithium…). kT is the excitation temperature
-in eV; the 0.5 eV default sits in the measured glow-discharge range, and
-since level energies dominate the line ratios, each emitter lands in its
-known color region across that whole range (neon red-orange x ≈ 0.67,
-argon lavender, mercury blue-white — pinned in test/lines.test.js).
-Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
-ASD's qualitative observed-intensity column is deliberately unused. The
-lines are spiky — integrate against the 1 nm observer (see emissionColor,
-or pass CMF_1931_2_1NM to spectrumXy/emissionToXyz).</p></article>
-<article id="resample"><h4><code>resample</code> <span class="src">spectral/index.js</span></h4><p>Resample a uniform-grid spectrum onto a new grid by Sprague (1880)
-quintic interpolation — the method CIE 167:2005 recommends for spectral
-data tabulated at equal intervals. Exact at source nodes; interior
-segments (two nodes in from each end) reproduce polynomials through
-degree 4 to rounding and hit the analytic Planckian to ~4e-9 relative;
-the two segments at each end use the CIE 167 boundary polynomials,
-which are approximations tuned for spectra (~4e-4 on the Planckian) —
-prefer sources that extend a little past the range you need. Never
-extrapolates: the target grid must lie within the source range.
-Verified against colour-science's SpragueInterpolator and Planck's law
-in test/resample.test.js.</p></article></section>
+
 
 <footer style="margin-top: 4rem; color: var(--dim); font-size: 0.85rem">
   <p>Regenerate with <code>node tools/build-api-page.js</code>.</p>

@@ -19,6 +19,16 @@ export interface CMF {
 export const CMF_1931_2: CMF;
 export const CMF_1964_10: CMF;
 export const D65_SPD: Spectrum;
+/** CIE F-series fluorescent illuminant SPDs (CIE 015) — the recommended priority subset. */
+export const FL2_SPD: Spectrum;
+export const FL7_SPD: Spectrum;
+export const FL11_SPD: Spectrum;
+/** CIE high-pressure discharge illuminant SPDs (CIE 015): HP1/HP2 sodium, HP3–HP5 metal halide. */
+export const HP1_SPD: Spectrum;
+export const HP2_SPD: Spectrum;
+export const HP3_SPD: Spectrum;
+export const HP4_SPD: Spectrum;
+export const HP5_SPD: Spectrum;
 export const DAYLIGHT_S: { start: number; step: number; s0: number[]; s1: number[]; s2: number[] };
 
 export function sampleSpd(spd: Spectrum, lambda: number): number;
@@ -62,7 +72,8 @@ export function resample(spd: Spectrum, opts?: { start?: number; step?: number; 
 /** Emission lines [λ nm, power] as integral-preserving Gaussian profiles. */
 export function lineSPD(lines: ArrayLike<number>[], opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 /** Low-pressure sodium: the Na D doublet (NIST ASD), 2:1 intensity. */
-export function sodiumSPD(opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
+/** Low-pressure sodium (SOX) lamp — the near-monochromatic D doublet. NOT a CIE standard (see HP1_SPD/HP2_SPD for the standardized high-pressure sodium). */
+export function lowPressureSodiumSPD(opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 /** Neutral-atom transitions per element (NIST ASD): [λ_air nm, g_k·A_ki s⁻¹, E_k eV]. */
 export const EMISSION_LINES: {
   hydrogen: number[][]; helium: number[][]; neon: number[][]; sodium: number[][];

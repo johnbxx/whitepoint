@@ -22,6 +22,7 @@ import { V_PRIME_1951 } from './data-scotopic.js';
 
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
 export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
+export { HP1_SPD, HP2_SPD, HP3_SPD, HP4_SPD, HP5_SPD } from './data-hp.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 export { WATER_ABSORPTION } from './data-water.js';
@@ -394,13 +395,17 @@ export function emissionColor(emitter, { to = 'oklch', gamut = 'srgb', kT } = {}
 }
 
 /**
- * Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
+ * Low-pressure sodium (SOX) lamp: the Na D doublet, D2 588.9950 nm and
  * D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
  * intensity ratio. The canonical near-monochromatic illuminant — under it,
- * color appearance collapses to a single hue. (The lamp model, kept exact;
- * for the full Na I line set see emissionSPD('sodium').)
+ * color appearance collapses to a single hue.
+ *
+ * Note this is NOT a CIE standard illuminant: the CIE standardizes only the
+ * *high*-pressure sodium lamps (HP1_SPD, HP2_SPD). It's a modeled idealized
+ * lamp, kept exact as two lines; for the full Na I line set under the
+ * discharge model see emissionSPD('sodium').
  */
-export function sodiumSPD(opts) {
+export function lowPressureSodiumSPD(opts) {
   return lineSPD([[588.9950, 2], [589.5924, 1]], opts);
 }
 

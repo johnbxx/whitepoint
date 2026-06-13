@@ -21,7 +21,11 @@ export function xyToXyz(xy, out = [0, 0, 0]) {
   return out;
 }
 
-// CIE 15:2004, Table T.3 (2° standard observer), as xy.
+// CIE 15:2004, Table T.3 (2° standard observer), as xy. These are the
+// reference whites used for chromatic adaptation; the F-series is the
+// CIE-recommended priority subset (F2/F7/F11), matching the shipped SPDs.
+// Lamp SPDs that aren't adaptation whites (the HP discharge series,
+// low-pressure sodium) live in whitepoint/spectral, not here.
 /** CIE illuminant chromaticities (CIE 15:2004): A, B, C, D50–D75, E, F2/F7/F11. */
 export const illuminants = {
   A:   [0.44757, 0.40745], // incandescent / tungsten, 2856 K

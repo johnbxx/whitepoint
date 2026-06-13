@@ -10,7 +10,7 @@
 // per frame, no approximation for diffuse bounce.
 
 import {
-  emissionSPD, sodiumSPD, EMISSION_LINES,
+  emissionSPD, lowPressureSodiumSPD, EMISSION_LINES,
   emissionToXyz, reflectanceOf, reflectanceToXyz,
   planckianSPD, attenuate,
 } from '../../src/spectral/index.js';
@@ -41,7 +41,7 @@ function yNorm(spd) {
  * Boltzmann emission model. The sodium streetlight is a lamp model (the
  * D doublet), not a Boltzmann gas — it ignores kT. */
 export function gasSPD(gas, kT) {
-  return yNorm(gas === 'sodium-lamp' ? sodiumSPD() : emissionSPD(gas, { kT }));
+  return yNorm(gas === 'sodium-lamp' ? lowPressureSodiumSPD() : emissionSPD(gas, { kT }));
 }
 
 /** CSS color of a monochromatic line: the CMF sample at λ, library-routed. */

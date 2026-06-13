@@ -1,8 +1,28 @@
 # Changelog
 
 All notable changes. The project follows semver; until 1.0, minor versions
-may adjust APIs (the one taken: `dischargeSPD` → `emissionSPD` in 0.12.0,
-before either name reached npm — see below).
+may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
+in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
+
+## 0.13.0 — 2026-06-13
+
+The illuminant catalog, completed and disambiguated.
+
+- **CIE high-pressure discharge illuminants `HP1_SPD`–`HP5_SPD`** in
+  `whitepoint/spectral` (CIE 015, 5 nm, via the existing colour-science
+  pipeline). HP1/HP2 are the standardized high-pressure *sodium* lamps —
+  the actual CIE sodium illuminant — and HP3–HP5 are metal halide. Each
+  integrates to its CIE 15 Table T.3 chromaticity to < 1e-3 (provenance
+  loop closed in `test/illuminants.test.js`).
+- **`sodiumSPD` → `lowPressureSodiumSPD`.** The old name read like the
+  element *and* like a CIE standard; it's neither — it's the modeled,
+  near-monochromatic low-pressure (SOX) lamp, which the CIE never
+  standardized. The docstring now says so and points to HP1/HP2. (Not
+  published to npm under either name, so no external break.)
+- The `.d.ts` now declares the fluorescent constants it had been missing
+  (`FL2/FL7/FL11_SPD`) alongside the new HP series; the chromaticity
+  `illuminants` table documents that it holds adaptation whites (the
+  CIE-priority F-subset), with lamp-only SPDs living in the spectral entry.
 
 ## 0.12.0 — 2026-06-13
 

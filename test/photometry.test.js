@@ -8,7 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import {
   V_PRIME_1951, photopicLuminance, scotopicLuminance, mesopic,
-  lineSPD, sodiumSPD, illuminantASPD, spectrumXy, sampleSpd, CMF_1931_2,
+  lineSPD, lowPressureSodiumSPD, illuminantASPD, spectrumXy, sampleSpd, CMF_1931_2,
 } from '../src/spectral/index.js';
 import { CMF_1931_2_1NM } from '../src/spectral/data-1nm.js';
 
@@ -33,7 +33,7 @@ test('S/P ratios reproduce engineering values', () => {
   const spA = scotopicLuminance(a) / photopicLuminance(a);
   assert.ok(spA > 1.3 && spA < 1.5, `incandescent S/P ${spA} (expect ≈1.4)`);
 
-  const lps = sodiumSPD();
+  const lps = lowPressureSodiumSPD();
   const spLps = scotopicLuminance(lps) / photopicLuminance(lps, { cmf: CMF_1931_2_1NM });
   assert.ok(spLps > 0.15 && spLps < 0.3, `LPS S/P ${spLps} (expect ≈0.2)`);
 });
@@ -77,14 +77,14 @@ test('sodium doublet sits on the spectral locus at its centroid', () => {
     sampleSpd({ start: CMF_1931_2_1NM.start, step: CMF_1931_2_1NM.step, values: CMF_1931_2_1NM.z }, centroid),
   ];
   const sum = mono[0] + mono[1] + mono[2];
-  const xy = spectrumXy(sodiumSPD(), { cmf: CMF_1931_2_1NM });
+  const xy = spectrumXy(lowPressureSodiumSPD(), { cmf: CMF_1931_2_1NM });
   assert.ok(Math.abs(xy[0] - mono[0] / sum) < 1e-3, `x ${xy[0]} vs ${mono[0] / sum}`);
   assert.ok(Math.abs(xy[1] - mono[1] / sum) < 1e-3, `y ${xy[1]} vs ${mono[1] / sum}`);
 });
 
 test('sodium with the 5 nm CMFs stays within abridgment error of the 1 nm result', () => {
-  const a = spectrumXy(sodiumSPD(), { cmf: CMF_1931_2 });
-  const b = spectrumXy(sodiumSPD(), { cmf: CMF_1931_2_1NM });
+  const a = spectrumXy(lowPressureSodiumSPD(), { cmf: CMF_1931_2 });
+  const b = spectrumXy(lowPressureSodiumSPD(), { cmf: CMF_1931_2_1NM });
   // line spectra are exactly what the 1 nm tables exist for — the 5 nm
   // result is close but measurably worse; document the gap, don't hide it
   assert.ok(Math.abs(a[0] - b[0]) < 5e-3 && Math.abs(a[1] - b[1]) < 5e-3,

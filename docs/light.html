@@ -327,7 +327,8 @@ const TMP = [0, 0, 0];
     ['candle 1850 K', () => spectral.planckianSPD(1850)],
     ['fluorescent F2', () => spectral.FL2_SPD],
     ['tri-band F11', () => spectral.FL11_SPD],
-    ['sodium lamp', () => spectral.sodiumSPD()],
+    ['high-pressure sodium (HP1)', () => spectral.HP1_SPD],
+    ['low-pressure sodium (SOX)', () => spectral.lowPressureSodiumSPD()],
   ];
   let spd = spectral.D65_SPD, label = 'D65 gallery light', adaptOn = false;
 
@@ -482,7 +483,7 @@ const TMP = [0, 0, 0];
     ['overcast (D65)', () => spectral.D65_SPD],
     ['golden hour (3000 K)', () => spectral.planckianSPD(3000)],
     ['blue-sky shade (Hosek zenith)', () => sky.skySPD(sky.skyModel({ elevation: 0.6, turbidity: 2 }), 0, Math.PI / 2 - 0.6)],
-    ['sodium streetlight', () => spectral.sodiumSPD()],
+    ['sodium streetlight', () => spectral.lowPressureSodiumSPD()],
   ];
 
   const W = 330, H = 225, SCALE = 2;
