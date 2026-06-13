@@ -1,8 +1,29 @@
 # Changelog
 
 All notable changes. The project follows semver; until 1.0, minor versions
-may adjust APIs (none have needed to yet — the API audit before 0.7.0 found
-no renames worth their churn).
+may adjust APIs (the one taken: `dischargeSPD` → `emissionSPD` in 0.12.0,
+before either name reached npm — see below).
+
+## 0.12.0 — 2026-06-13
+
+The spectral layer gets a front door — the "web developer's toolkit" line
+made literal.
+
+- **`emissionColor(emitter, { to, gamut, kT })`** in `whitepoint/spectral`:
+  a named atomic emitter (or your own transition data) straight to a
+  render-ready, gamut-safe color in one call — the spectrum → 1 nm-observer
+  XYZ → your space → display-cusp pipeline that everyone was assembling by
+  hand, with the two silent traps (wrong CMF, no normalization) closed by
+  construction. `emissionColor('neon')` → vivid sRGB-safe red-orange;
+  `{ gamut: 'display-p3' }` returns the same hue with the chroma a wide
+  screen actually shows. Saturated emitters land on the cusp; pale ones
+  (argon's lavender) keep their real, lower chroma.
+- **`dischargeSPD` → `emissionSPD`**, now overloaded to take a *name*
+  (`emissionSPD('neon')`) or raw transitions, with a helpful throw on an
+  unknown emitter. Renamed because the model is atomic line emission, gas
+  tube or flame metal — not specifically a discharge. Neither name was ever
+  published to npm, so no external break. `lineSPD`, `EMISSION_LINES`, and
+  the rest of the layer are unchanged and still exported.
 
 ## 0.11.0 — 2026-06-12
 

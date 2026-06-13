@@ -4,7 +4,7 @@
 // and upper-level energy E_k (eV), 380–780 nm, for every line
 // with a critically evaluated transition probability. Raw query responses:
 // tools/data/asd-*.tsv. ASD's qualitative `intens` column is not used —
-// line powers are derived, not transcribed: see dischargeSPD.
+// line powers are derived, not transcribed: see emissionSPD.
 
 /** Emission-line transitions per element: arrays of [λ_air nm, g_k·A_ki s⁻¹, E_k eV]. */
 export const EMISSION_LINES = {

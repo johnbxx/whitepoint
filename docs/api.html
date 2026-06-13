@@ -391,7 +391,7 @@ spectra.</p></article>
 D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
 intensity ratio. The canonical near-monochromatic illuminant — under it,
 color appearance collapses to a single hue. (The lamp model, kept exact;
-for the full Na I line set see dischargeSPD(EMISSION_LINES.sodium).)</p></article>
+for the full Na I line set see emissionSPD('sodium').)</p></article>
 </section>
 
 <section>
@@ -489,18 +489,37 @@ the total). Default gamma 0 looks at the disc's center: the color of
 direct sunlight through this atmosphere.</p></article>
 </section>
 <section><h3>Ungrouped</h3><article id="EMISSION_LINES"><h4><code>EMISSION_LINES</code> <span class="src">spectral/data-lines.js</span></h4><p>Emission-line transitions per element: arrays of [λ_air nm, g_k·A_ki s⁻¹, E_k eV].</p></article>
-<article id="dischargeSPD"><h4><code>dischargeSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a low-pressure gas discharge, derived — not transcribed — from
-atomic data: optically-thin emission with Boltzmann-populated upper
-levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT). Pair with
-EMISSION_LINES (NIST ASD transitions): dischargeSPD(EMISSION_LINES.neon)
-is the spectrum of a neon sign. There is no standard illuminant for
-neon — this is how you compute one. kT is the excitation temperature in
-eV; the 0.5 eV default sits in the measured glow-discharge range, and
-since level energies dominate the line ratios, each gas lands in its
+<article id="emissionColor"><h4><code>emissionColor</code> <span class="src">spectral/index.js</span></h4><p>The render-ready color of an atomic emitter, in one call — the spectral
+pipeline a web developer actually wants:</p><p>  emissionColor('neon')                          // → [0.63, 0.26, 33] oklch, sRGB-safe
+  emissionColor('neon', { gamut: 'display-p3' }) // → a redder neon a wide screen can show
+  emissionColor('argon', { to: 'srgb' })         // → sRGB coords, ready for a hex</p><p>The hue *and saturation* are the physics: emissionSPD → XYZ against the
+1 nm observer (so the spiky lines don't alias — the trap of the
+lower-level path) → the emitter's chromaticity. The color is returned at
+the chosen display's cusp *lightness* (as bright as that gamut allows for
+the hue — right for a glowing light), carrying the emitter's own chroma
+clamped to what the display can show. So saturated emitters land on the
+cusp (vivid neon) while pale ones stay pale (argon's lavender, not a
+cranked magenta) — never out of range. <code>gamut</code> picks the display (default
+'srgb'); a wider gamut shows the same hue with more chroma (the
+wide-gamut win, made literal). <code>to</code> is just the output coordinate space.</p><p>The physics is here, at load. For the GPU side, emit the matching color
+math with whitepoint/codegen (glsl, glslGamutMap) — same constants,
+parity-tested. This is a convenience over emissionSPD + emissionToXyz +
+findCusp + convert; every step stays individually exported.</p></article>
+<article id="emissionSPD"><h4><code>emissionSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a named atomic emitter, or of your own transition data, derived —
+not transcribed — from atomic physics: optically-thin emission with
+Boltzmann-populated upper levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT).</p><p>  emissionSPD('neon')               // a name from EMISSION_LINES
+  emissionSPD(EMISSION_LINES.neon)  // the same, data passed directly
+  emissionSPD(myLines)              // your own [λ_nm, g·A s⁻¹, E_k eV] rows</p><p>There is no standard illuminant for a neon sign — this is how you compute
+one. The same model fits any thermally-excited atomic emitter, a discharge
+tube or a flame metal (sodium, lithium…). kT is the excitation temperature
+in eV; the 0.5 eV default sits in the measured glow-discharge range, and
+since level energies dominate the line ratios, each emitter lands in its
 known color region across that whole range (neon red-orange x ≈ 0.67,
 argon lavender, mercury blue-white — pinned in test/lines.test.js).
 Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
-ASD's qualitative observed-intensity column is deliberately unused.</p></article>
+ASD's qualitative observed-intensity column is deliberately unused. The
+lines are spiky — integrate against the 1 nm observer (see emissionColor,
+or pass CMF_1931_2_1NM to spectrumXy/emissionToXyz).</p></article>
 <article id="resample"><h4><code>resample</code> <span class="src">spectral/index.js</span></h4><p>Resample a uniform-grid spectrum onto a new grid by Sprague (1880)
 quintic interpolation — the method CIE 167:2005 recommends for spectral
 data tabulated at equal intervals. Exact at source nodes; interior

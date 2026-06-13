@@ -68,8 +68,12 @@ export const EMISSION_LINES: {
   hydrogen: number[][]; helium: number[][]; neon: number[][]; sodium: number[][];
   argon: number[][]; krypton: number[][]; xenon: number[][]; mercury: number[][];
 };
-/** Low-pressure discharge SPD, derived: line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT), kT in eV. */
-export function dischargeSPD(transitions: ArrayLike<number>[], opts?: { kT?: number; start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
+/** Known emitter name (a key of EMISSION_LINES), or your own [λ_nm, g·A, E_k eV] rows. */
+export type Emitter = keyof typeof EMISSION_LINES | ArrayLike<number>[];
+/** Atomic-emission SPD, derived: line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT), kT in eV. */
+export function emissionSPD(emitter: Emitter, opts?: { kT?: number; start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
+/** Render-ready color of an emitter: spectrum → `to` space at unit luminance; `gamut` cusp-maps it for display. */
+export function emissionColor(emitter: Emitter, opts?: { to?: string; gamut?: string; kT?: number }): number[];
 
 /** CIE 13.3-1995 color rendering index: Ra (mean R1–R8) + all 14 Ri (R9 = strong red). */
 export function cri(spd: Spectrum): { Ra: number; Ri: number[]; cct: number; duv: number };

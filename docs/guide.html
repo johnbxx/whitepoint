@@ -204,13 +204,14 @@ tm30(FL2_SPD);  // IES TM-30-20: { Rf: 70, Rg: 86 }</pre>
   model with one effective parameter, the excitation temperature. And when tabulated
   data arrives on the wrong grid, <code class="inline">resample()</code> moves it the
   way CIE 167:2005 says to — Sprague's quintic, exact at the nodes.</p>
-  <pre>import { dischargeSPD, EMISSION_LINES, resample, spectrumXy }
-  from 'whitepoint/spectral';
-import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
+  <pre>import { emissionColor, emissionSPD, resample, FL2_SPD } from 'whitepoint/spectral';
 
-const neon = dischargeSPD(EMISSION_LINES.neon);  // powers ∝ (g·A/λ)·e^(−E/kT)
-spectrumXy(neon, { cmf: CMF_1931_2_1NM });       // line spectra want 1 nm CMFs
+// the one-liner: a named emitter → a render-ready, gamut-safe color
+emissionColor('neon', { to: 'oklch', gamut: 'srgb' });   // → vivid red-orange
+emissionColor('neon', { gamut: 'display-p3' });          // → a redder neon a wide screen shows
 
+// or drop a level for the spectrum itself (a sign, a flame metal, your own lines)
+const neon = emissionSPD('neon');                // powers ∝ (g·A/λ)·e^(−E/kT)
 const fine = resample(FL2_SPD, { step: 1 });     // 5 nm table → 1 nm grid</pre>
   <div class="out" id="o-discharge"></div>
   <p>The <a href="./neon.html">neon alley</a> is exactly this code with a renderer
@@ -318,17 +319,15 @@ $('o-spectral').innerHTML = [
   `cri(FL2)  → Ra ${f2cri.Ra.toFixed(1)}, R9 ${f2cri.Ri[8].toFixed(0)}     tm30(FL2) → Rf ${f2tm.Rf.toFixed(1)}, Rg ${f2tm.Rg.toFixed(1)}`,
 ].join('\n');
 
-// discharge + resample
-const cmf1 = wp.spectral1nm.CMF_1931_2_1NM;
+// emission + resample — the swatch IS the one-liner's output
 const dis = (gas) => {
-  const xy = spectral.spectrumXy(spectral.dischargeSPD(spectral.EMISSION_LINES[gas]), { cmf: cmf1 });
-  const lch = convert(wp.xyToXyz(xy).map((v) => v * 0.6), 'xyz-d65', 'oklch');
-  const safe = toGamut(lch, 'oklch', { gamut: 'srgb', method: 'cusp' });
-  return `${sw(convert(safe, 'oklch', 'srgb'))} ${gas.padEnd(8)} xy ${xy.map((v) => v.toFixed(3)).join(' ')}`;
+  const c = spectral.emissionColor(gas, { to: 'oklch', gamut: 'srgb' });
+  return `${sw(convert(c, 'oklch', 'srgb'))} emissionColor('${gas}')`.padEnd(0)
+    + ` → oklch(${(c[0] * 100).toFixed(0)}% ${c[1].toFixed(3)} ${c[2].toFixed(0)})`;
 };
 const fineFl2 = spectral.resample(spectral.FL2_SPD, { step: 1 });
 $('o-discharge').innerHTML = [
-  dis('neon'), dis('argon'), dis('mercury'), dis('hydrogen'),
+  dis('neon'), dis('argon'), dis('mercury'), dis('sodium'),
   `resample(FL2_SPD, { step: 1 })  →  ${spectral.FL2_SPD.values.length} samples → ${fineFl2.values.length}, nodes exact`,
 ].join('\n');
 

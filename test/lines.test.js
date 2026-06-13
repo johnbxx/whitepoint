@@ -1,15 +1,17 @@
 // There is no standard illuminant for neon — so the validation is physics,
-// not a spec fixture: dischargeSPD derives line powers from NIST ASD
+// not a spec fixture: emissionSPD derives line powers from NIST ASD
 // transition probabilities and level energies (never the qualitative
 // intensity column), and each gas must land in its known color region,
 // robustly across the plausible glow-discharge excitation range.
 
 import test from 'node:test';
 import assert from 'node:assert';
-import { dischargeSPD, sodiumSPD, lineSPD, spectrumXy, EMISSION_LINES } from '../src/spectral/index.js';
+import { emissionSPD, emissionColor, sodiumSPD, lineSPD, spectrumXy, EMISSION_LINES } from '../src/spectral/index.js';
 import { CMF_1931_2_1NM } from '../src/spectral/data-1nm.js';
+import { inGamut, convert } from '../src/index.js';
+import { findCusp } from '../src/gamut/index.js';
 
-const xyOf = (el, kT) => spectrumXy(dischargeSPD(EMISSION_LINES[el], { kT }), { cmf: CMF_1931_2_1NM });
+const xyOf = (el, kT) => spectrumXy(emissionSPD(el, { kT }), { cmf: CMF_1931_2_1NM });
 
 // Known color regions at the default excitation temperature. Bounds are
 // physical expectations (tube colors), not snapshots of our own output.
@@ -84,17 +86,65 @@ test('transition data is sane: visible λ, positive gA, bound Ek, sorted', () =>
   }
 });
 
-test('dischargeSPD forwards grid options to lineSPD', () => {
-  const spd = dischargeSPD(EMISSION_LINES.neon, { start: 400, end: 700, step: 1, fwhm: 4 });
+test('emissionSPD accepts a name or the data array identically', () => {
+  const byName = emissionSPD('neon');
+  const byData = emissionSPD(EMISSION_LINES.neon);
+  assert.deepStrictEqual(byName.values, byData.values);
+});
+
+test('emissionSPD throws a helpful error on an unknown emitter', () => {
+  assert.throws(() => emissionSPD('xexon'), /unknown emitter 'xexon'/);
+  assert.throws(() => emissionSPD('xexon'), /neon/); // lists the known names
+});
+
+test('emissionSPD forwards grid options to lineSPD', () => {
+  const spd = emissionSPD('neon', { start: 400, end: 700, step: 1, fwhm: 4 });
   assert.strictEqual(spd.start, 400);
   assert.strictEqual(spd.values.length, 301);
   // Wider profile, same integral — compared on the full default grid, where
   // no line's tail crosses the boundary (the 703.2 nm line straddles a
   // 400–700 window, so a clipped grid would NOT conserve power).
-  const wide = dischargeSPD(EMISSION_LINES.neon, { fwhm: 4 });
-  const narrow = dischargeSPD(EMISSION_LINES.neon);
+  const wide = emissionSPD('neon', { fwhm: 4 });
+  const narrow = emissionSPD('neon');
   const sum = (s) => s.values.reduce((a, b) => a + b, 0);
   assert.ok(Math.abs(sum(wide) / sum(narrow) - 1) < 1e-3);
+});
+
+test('emissionColor: neon reads red-orange, is gamut-safe, and P3 shows it richer', () => {
+  // Hue (oklch h) must read red-orange.
+  const srgbN = emissionColor('neon', { to: 'oklch' });            // default gamut srgb
+  assert.ok(srgbN[2] > 20 && srgbN[2] < 45, `neon oklch hue: ${srgbN[2]}`);
+
+  // The result is always inside the requested display gamut (it's the cusp).
+  assert.ok(inGamut(convert(emissionColor('neon', { to: 'srgb' }), 'srgb', 'srgb'), 'srgb'),
+    'neon@srgb must be sRGB-safe');
+  assert.ok(inGamut(convert(emissionColor('neon', { to: 'display-p3', gamut: 'display-p3' }), 'display-p3', 'display-p3'), 'display-p3'),
+    'neon@p3 must be P3-safe');
+
+  // The wide-gamut win, made literal: same hue, more chroma on P3.
+  const p3N = emissionColor('neon', { to: 'oklch', gamut: 'display-p3' });
+  assert.ok(Math.abs(p3N[2] - srgbN[2]) < 1.5, `hue stable across gamut: ${srgbN[2]} vs ${p3N[2]}`);
+  assert.ok(p3N[1] > srgbN[1] + 0.01, `P3 neon should be more saturated: ${p3N[1]} vs ${srgbN[1]}`);
+});
+
+test('emissionColor carries real saturation: pale argon is not a cranked magenta', () => {
+  // Saturated neon should pin to the cusp; pale argon must stay well below
+  // it — proof the emitter's own chroma survives, not just its hue.
+  const neon = emissionColor('neon', { to: 'oklch' });
+  const argon = emissionColor('argon', { to: 'oklch' });
+  const argonCusp = findCusp(argon[2], 'srgb')[1];
+  assert.ok(argon[1] < argonCusp - 0.03, `argon should sit inside its cusp: C ${argon[1]} vs cusp ${argonCusp}`);
+  assert.ok(argon[1] < neon[1], `argon should be paler than neon: ${argon[1]} vs ${neon[1]}`);
+});
+
+test('emissionColor name and data forms agree; kT shifts the result', () => {
+  assert.deepStrictEqual(
+    emissionColor('neon', { to: 'oklch' }),
+    emissionColor(EMISSION_LINES.neon, { to: 'oklch' }),
+  );
+  const cool = emissionColor('neon', { to: 'oklch', kT: 0.4 });
+  const hot = emissionColor('neon', { to: 'oklch', kT: 1.5 });
+  assert.notStrictEqual(cool[1], hot[1]); // chroma moves with excitation
 });
 
 test('lineSPD remains the open mechanism: a hand-built doublet matches sodiumSPD', () => {

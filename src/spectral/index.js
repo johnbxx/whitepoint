@@ -12,7 +12,11 @@
 // abridged data). Integration is the standard Riemann sum at the CMF grid.
 
 import { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S } from './data.js';
+import { CMF_1931_2_1NM } from './data-1nm.js';
 import { daylightXy } from '../lab/cct.js';
+import { convert } from '../core/convert.js';
+import { xyToXyz } from '../constants/whitepoints.js';
+import { findCusp } from '../gamut/index.js';
 
 import { V_PRIME_1951 } from './data-scotopic.js';
 
@@ -21,7 +25,8 @@ export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 export { WATER_ABSORPTION } from './data-water.js';
-export { EMISSION_LINES } from './data-lines.js';
+import { EMISSION_LINES } from './data-lines.js';
+export { EMISSION_LINES };
 export { V_PRIME_1951 };
 export { cri, tm30, cam02ViewingConditions, xyzToCam02Ucs } from './quality.js';
 
@@ -325,22 +330,67 @@ export function lineSPD(lines, { start = 360, step = 1, end = 830, fwhm = 2 } = 
 }
 
 /**
- * SPD of a low-pressure gas discharge, derived — not transcribed — from
- * atomic data: optically-thin emission with Boltzmann-populated upper
- * levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT). Pair with
- * EMISSION_LINES (NIST ASD transitions): dischargeSPD(EMISSION_LINES.neon)
- * is the spectrum of a neon sign. There is no standard illuminant for
- * neon — this is how you compute one. kT is the excitation temperature in
- * eV; the 0.5 eV default sits in the measured glow-discharge range, and
- * since level energies dominate the line ratios, each gas lands in its
+ * SPD of a named atomic emitter, or of your own transition data, derived —
+ * not transcribed — from atomic physics: optically-thin emission with
+ * Boltzmann-populated upper levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT).
+ *
+ *   emissionSPD('neon')               // a name from EMISSION_LINES
+ *   emissionSPD(EMISSION_LINES.neon)  // the same, data passed directly
+ *   emissionSPD(myLines)              // your own [λ_nm, g·A s⁻¹, E_k eV] rows
+ *
+ * There is no standard illuminant for a neon sign — this is how you compute
+ * one. The same model fits any thermally-excited atomic emitter, a discharge
+ * tube or a flame metal (sodium, lithium…). kT is the excitation temperature
+ * in eV; the 0.5 eV default sits in the measured glow-discharge range, and
+ * since level energies dominate the line ratios, each emitter lands in its
  * known color region across that whole range (neon red-orange x ≈ 0.67,
  * argon lavender, mercury blue-white — pinned in test/lines.test.js).
  * Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
- * ASD's qualitative observed-intensity column is deliberately unused.
+ * ASD's qualitative observed-intensity column is deliberately unused. The
+ * lines are spiky — integrate against the 1 nm observer (see emissionColor,
+ * or pass CMF_1931_2_1NM to spectrumXy/emissionToXyz).
  */
-export function dischargeSPD(transitions, { kT = 0.5, ...opts } = {}) {
+export function emissionSPD(emitter, { kT = 0.5, ...opts } = {}) {
+  const transitions = typeof emitter === 'string' ? EMISSION_LINES[emitter] : emitter;
+  if (!transitions) {
+    throw new RangeError(`emissionSPD: unknown emitter '${emitter}' — known: ${Object.keys(EMISSION_LINES).join(', ')}`);
+  }
   const lines = transitions.map(([wl, gA, Ek]) => [wl, (gA / wl) * Math.exp(-Ek / kT)]);
   return lineSPD(lines, opts);
+}
+
+/**
+ * The render-ready color of an atomic emitter, in one call — the spectral
+ * pipeline a web developer actually wants:
+ *
+ *   emissionColor('neon')                          // → [0.63, 0.26, 33] oklch, sRGB-safe
+ *   emissionColor('neon', { gamut: 'display-p3' }) // → a redder neon a wide screen can show
+ *   emissionColor('argon', { to: 'srgb' })         // → sRGB coords, ready for a hex
+ *
+ * The hue *and saturation* are the physics: emissionSPD → XYZ against the
+ * 1 nm observer (so the spiky lines don't alias — the trap of the
+ * lower-level path) → the emitter's chromaticity. The color is returned at
+ * the chosen display's cusp *lightness* (as bright as that gamut allows for
+ * the hue — right for a glowing light), carrying the emitter's own chroma
+ * clamped to what the display can show. So saturated emitters land on the
+ * cusp (vivid neon) while pale ones stay pale (argon's lavender, not a
+ * cranked magenta) — never out of range. `gamut` picks the display (default
+ * 'srgb'); a wider gamut shows the same hue with more chroma (the
+ * wide-gamut win, made literal). `to` is just the output coordinate space.
+ *
+ * The physics is here, at load. For the GPU side, emit the matching color
+ * math with whitepoint/codegen (glsl, glslGamutMap) — same constants,
+ * parity-tested. This is a convenience over emissionSPD + emissionToXyz +
+ * findCusp + convert; every step stays individually exported.
+ */
+export function emissionColor(emitter, { to = 'oklch', gamut = 'srgb', kT } = {}) {
+  const xy = spectrumXy(emissionSPD(emitter, { kT }), { cmf: CMF_1931_2_1NM });
+  // Hue and chroma at unit luminance; oklab L and C both scale as the cube
+  // root of overall luminance, so rescaling to the cusp lightness is exact.
+  const [L1, C1, h] = convert(xyToXyz(xy), 'xyz-d65', 'oklch');
+  const [Lc, Cc] = findCusp(h, gamut);
+  const C = Math.min(C1 * (Lc / L1), Cc); // the emitter's saturation, gamut-clamped
+  return convert([Lc, C, h], 'oklch', to);
 }
 
 /**
@@ -348,7 +398,7 @@ export function dischargeSPD(transitions, { kT = 0.5, ...opts } = {}) {
  * D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
  * intensity ratio. The canonical near-monochromatic illuminant — under it,
  * color appearance collapses to a single hue. (The lamp model, kept exact;
- * for the full Na I line set see dischargeSPD(EMISSION_LINES.sodium).)
+ * for the full Na I line set see emissionSPD('sodium').)
  */
 export function sodiumSPD(opts) {
   return lineSPD([[588.9950, 2], [589.5924, 1]], opts);

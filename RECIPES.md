@@ -233,15 +233,21 @@ const Ls = scotopicLuminance(spd);      // rod-weighted (V', K'm = 1700.06)
 const { m } = mesopic(Lp, Ls);          // 1 = full color, 0 = rod gray
 ```
 
-## Lamp spectra: sodium, neon, fluorescent
+## The color of neon (and other atomic emitters)
 
 ```js
-import { sodiumSPD, dischargeSPD, EMISSION_LINES, resample, FL2_SPD, spectrumXy } from 'whitepoint/spectral';
-import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
-const lps = sodiumSPD();                        // Na D doublet (NIST), 2:1
-const neon = dischargeSPD(EMISSION_LINES.neon); // derived: (g·A/λ)·exp(−E/kT)
-spectrumXy(neon, { cmf: CMF_1931_2_1NM });      // → x ≈ 0.67, a real sign tube
-const fl2Fine = resample(FL2_SPD, { step: 1 }); // Sprague, per CIE 167:2005
+import { emissionColor, emissionSPD, resample, FL2_SPD } from 'whitepoint/spectral';
+
+// the one-liner: a named emitter → a render-ready, gamut-safe color
+emissionColor('neon', { to: 'oklch', gamut: 'srgb' });   // → [0.63, 0.25, 30] vivid red-orange
+emissionColor('neon', { gamut: 'display-p3' });          // → a redder neon a wide screen shows
+emissionColor('argon', { to: 'srgb' });                  // → sRGB coords, ready to serialize
+
+// drop a level when you need the spectrum itself (its color is derived,
+// not transcribed: line power ∝ (g·A/λ)·exp(−E/kT) from NIST ASD)
+const neon = emissionSPD('neon');                // a sign tube
+const myFlame = emissionSPD(myMeasuredLines);    // or your own [λ, g·A, Eₖ] rows
+const fl2Fine = resample(FL2_SPD, { step: 1 });  // 5 nm table → 1 nm grid (Sprague, CIE 167:2005)
 ```
 
 ## The sky, by wavelength (Hosek-Wilkie)
