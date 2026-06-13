@@ -19,16 +19,35 @@ export interface CMF {
 export const CMF_1931_2: CMF;
 export const CMF_1964_10: CMF;
 export const D65_SPD: Spectrum;
-/** CIE F-series fluorescent illuminant SPDs (CIE 015) — the recommended priority subset. */
+/** CIE F-series fluorescent illuminant SPDs (CIE 015), FL1–FL12 (F2/F7/F11 are the priority subset). */
+export const FL1_SPD: Spectrum;
 export const FL2_SPD: Spectrum;
+export const FL3_SPD: Spectrum;
+export const FL4_SPD: Spectrum;
+export const FL5_SPD: Spectrum;
+export const FL6_SPD: Spectrum;
 export const FL7_SPD: Spectrum;
+export const FL8_SPD: Spectrum;
+export const FL9_SPD: Spectrum;
+export const FL10_SPD: Spectrum;
 export const FL11_SPD: Spectrum;
+export const FL12_SPD: Spectrum;
 /** CIE high-pressure discharge illuminant SPDs (CIE 015): HP1/HP2 sodium, HP3–HP5 metal halide. */
 export const HP1_SPD: Spectrum;
 export const HP2_SPD: Spectrum;
 export const HP3_SPD: Spectrum;
 export const HP4_SPD: Spectrum;
 export const HP5_SPD: Spectrum;
+/** CIE LED illuminant SPDs (CIE 015:2018): B1–B5 phosphor, BH1 hybrid, RGB1, V1/V2 violet-pump. */
+export const LED_B1_SPD: Spectrum;
+export const LED_B2_SPD: Spectrum;
+export const LED_B3_SPD: Spectrum;
+export const LED_B4_SPD: Spectrum;
+export const LED_B5_SPD: Spectrum;
+export const LED_BH1_SPD: Spectrum;
+export const LED_RGB1_SPD: Spectrum;
+export const LED_V1_SPD: Spectrum;
+export const LED_V2_SPD: Spectrum;
 export const DAYLIGHT_S: { start: number; step: number; s0: number[]; s1: number[]; s2: number[] };
 
 export function sampleSpd(spd: Spectrum, lambda: number): number;

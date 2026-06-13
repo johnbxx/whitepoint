@@ -21,8 +21,15 @@ import { findCusp } from '../gamut/index.js';
 import { V_PRIME_1951 } from './data-scotopic.js';
 
 export { CMF_1931_2, CMF_1964_10, D65_SPD, DAYLIGHT_S };
-export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
+export {
+  FL1_SPD, FL2_SPD, FL3_SPD, FL4_SPD, FL5_SPD, FL6_SPD,
+  FL7_SPD, FL8_SPD, FL9_SPD, FL10_SPD, FL11_SPD, FL12_SPD,
+} from './data-fluorescent.js';
 export { HP1_SPD, HP2_SPD, HP3_SPD, HP4_SPD, HP5_SPD } from './data-hp.js';
+export {
+  LED_B1_SPD, LED_B2_SPD, LED_B3_SPD, LED_B4_SPD, LED_B5_SPD,
+  LED_BH1_SPD, LED_RGB1_SPD, LED_V1_SPD, LED_V2_SPD,
+} from './data-led.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 export { WATER_ABSORPTION } from './data-water.js';

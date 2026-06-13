@@ -4,6 +4,26 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
 in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
 
+## 0.14.0 — 2026-06-13
+
+The standard-illuminant catalog, finished.
+
+- **Full CIE F-series** `FL1_SPD`–`FL12_SPD` (was the priority subset
+  FL2/7/11) and the **CIE 15:2018 LED series** `LED_B1_SPD`–`LED_B5_SPD`
+  (phosphor blue-pump, 2700–6500 K), `LED_BH1_SPD` (hybrid),
+  `LED_RGB1_SPD` (RGB-mixed), `LED_V1_SPD`/`LED_V2_SPD` (violet-pump) — all
+  via the same colour-science pipeline, each integrating to its published
+  chromaticity to < 1e-3 (`test/illuminants.test.js`). LED is now the most
+  common artificial light we'd have been conspicuously missing.
+- With this, every *standardized* everyday light source is covered:
+  daylight/sky (Hosek–Wilkie + `daylightSPD`), incandescent/thermal
+  (`planckianSPD`, illuminant A), fluorescent (FL1–12), LED (B/BH/RGB/V),
+  discharge & sodium (`emissionSPD`, HP1–5, low-pressure sodium), lasers
+  (`lineSPD`). Not standardized, so deliberately out of scope: molecular
+  band emission (flames, fireworks) and chemi/bioluminescence — these need
+  measured or computed band spectra, not a CIE table. (There is no standard
+  xenon-arc illuminant either; xenon *lines* are in `emissionSPD`.)
+
 ## 0.13.0 — 2026-06-13
 
 The illuminant catalog, completed and disambiguated.

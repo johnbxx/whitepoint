@@ -1,6 +1,6 @@
 {
   "name": "whitepoint",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Research-grade color math: every CSS color space, arbitrary illuminants, CATs, and CCT — digit-identical in JS, GLSL, and WGSL.",
   "type": "module",
   "main": "./src/index.js",
