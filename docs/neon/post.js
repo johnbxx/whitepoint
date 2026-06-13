@@ -226,9 +226,12 @@ export function createPost(renderer, width, height, uMode) {
     output.mat.uniforms.tBloom.value = ping.texture;
 
     // Wide scale: downsample the tight bloom to quarter res and blur on.
+    // The first horizontal pass still reads the half-res texture, so its
+    // tap spacing uses the SOURCE texel size (quarter-res spacing there
+    // would skip every other input texel).
     for (let i = 0; i < 2; i++) {
       blur.mat.uniforms.tSrc.value = i === 0 ? ping.texture : ping2.texture;
-      blur.mat.uniforms.uDir.value.set(1 / qw, 0);
+      blur.mat.uniforms.uDir.value.set(i === 0 ? 1 / bw : 1 / qw, 0);
       renderer.setRenderTarget(pong2);
       renderer.render(blur.scene, cam);
 

@@ -46,7 +46,10 @@ export function gasSPD(gas, kT) {
 
 /** CSS color of a monochromatic line: the CMF sample at λ, library-routed. */
 export function lineColorCss(lambda) {
-  const i = Math.round(lambda) - CMF_1931_2_1NM.start;
+  const i = Math.min(
+    Math.max(Math.round(lambda) - CMF_1931_2_1NM.start, 0),
+    CMF_1931_2_1NM.x.length - 1,
+  );
   const xyz = [CMF_1931_2_1NM.x[i], CMF_1931_2_1NM.y[i], CMF_1931_2_1NM.z[i]];
   const s = clip(convert(xyz.map((v) => v / Math.max(...xyz, 1e-6)), 'xyz-d65', 'srgb'));
   return `rgb(${s.map((v) => Math.round(v * 255)).join(',')})`;
@@ -105,6 +108,12 @@ export const MATERIALS = {
   metal: parseTo('#2c3138', 'srgb'),
 };
 
+// Reflectances depend only on the material, never the light — solve the
+// Jakob–Hanika spectra once; gas swaps and kT drags reuse them.
+const REFLECTANCES = Object.fromEntries(
+  Object.entries(MATERIALS).map(([name, coords]) => [name, reflectanceOf(coords, 'srgb')]),
+);
+
 /**
  * The full precomputation: lights × materials.
  * Light defs: { name, gas } | { name, window: [paneHexes] }, plus
@@ -126,8 +135,7 @@ export function deriveScene(lightDefs) {
     return { ...def, spd, xyz, naive: naiveSrgb(xyz) };
   });
   const pairs = {};
-  for (const [name, coords] of Object.entries(MATERIALS)) {
-    const refl = reflectanceOf(coords, 'srgb');
+  for (const [name, refl] of Object.entries(REFLECTANCES)) {
     pairs[name] = lights.map((l) => reflectanceToXyz(refl, { illuminant: l.spd, ...CMF }));
   }
   // Night sky over a city is mostly scattered streetlight: reuse the sodium
@@ -143,8 +151,8 @@ export function swapGas(derived, index, gas, kT) {
   l.spd = gasSPD(gas, kT);
   l.xyz = emissionToXyz(l.spd, CMF);
   l.naive = naiveSrgb(l.xyz);
-  for (const [name, coords] of Object.entries(MATERIALS)) {
-    derived.pairs[name][index] = reflectanceToXyz(reflectanceOf(coords, 'srgb'), { illuminant: l.spd, ...CMF });
+  for (const [name, refl] of Object.entries(REFLECTANCES)) {
+    derived.pairs[name][index] = reflectanceToXyz(refl, { illuminant: l.spd, ...CMF });
   }
   return l;
 }

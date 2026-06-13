@@ -118,7 +118,8 @@ const TUBE_FRAG = /* glsl */ `
   uniform float uMode;
   void main() {
     // Limb profile: a glowing column reads brightest through its core.
-    // (Squared by multiplication — pow(0, y) is NaN on some Metal drivers.)
+    // (Squared by multiplication, not pow() — a base that interpolation
+    // nudges below zero makes pow() NaN by spec for fractional exponents.)
     float d = max(dot(normalize(vNormal), vView), 0.0);
     float core = 0.55 + 0.45 * d * d;
     float p = uPower * uFlicker;
@@ -163,8 +164,10 @@ const FOG_FRAG = /* glsl */ `
   uniform float uFlicker;
   uniform float uMode;
   void main() {
-    // max() guard: pow(0, y) returns NaN on some Metal drivers, and one
-    // NaN in an additive pass paints the gamut-mapped output black.
+    // max() guard: at the cone's v=0 rim, interpolation lets v dip a hair
+    // below zero, and pow() with a negative base is NaN by spec for
+    // fractional exponents — one NaN in an additive pass paints the
+    // gamut-mapped output black (we shipped that ring once).
     float a = pow(max(vUvE.y, 1e-4), 1.6) * (0.45 + 0.55 * sin(3.14159265 * vUvE.x));
     vec3 whitepoint = uXyz * uPower * uFlicker * a;
     vec3 naive = min(uNaive * uPower * uFlicker, vec3(1.0)) * a;
@@ -451,7 +454,12 @@ function buildReflections(ctx, sources) {
       const isEmissive = node.material.fragmentShader === EMISSIVE_FRAG;
       if (!isTube && !isEmissive) return;
       const m = node.material.clone();
-      // Same derived colors, same flicker object, dimmed by the water.
+      // Intentionally SHARE the color/flicker uniform objects with the
+      // source material — a reflection is the same light, so gas swaps and
+      // kT changes propagate for free. Only the power is independent
+      // (dimmed by the water, updated per frame in updateReflections).
+      m.uniforms.uXyz = node.material.uniforms.uXyz;
+      m.uniforms.uNaive = node.material.uniforms.uNaive;
       m.uniforms.uFlicker = node.material.uniforms.uFlicker;
       m.uniforms.uMode = ctx.uMode;
       m.uniforms.uPower = { value: node.material.uniforms.uPower.value };
@@ -471,13 +479,12 @@ function buildReflections(ctx, sources) {
   return group;
 }
 
-/** Per-frame reflection dimming (wetness × a fixed water loss). */
+/** Per-frame reflection dimming (wetness × a fixed water loss). Colors and
+ * flicker are shared uniform objects set up in buildReflections. */
 export function updateReflections(ctx) {
   const wet = ctx.shared.uWetness.value;
   for (const { m, src } of ctx.reflectionMats) {
     m.uniforms.uPower.value = src.uniforms.uPower.value * 0.38 * wet;
-    m.uniforms.uXyz = src.uniforms.uXyz;
-    m.uniforms.uNaive = src.uniforms.uNaive;
   }
 }
 

@@ -2,6 +2,8 @@
 // makes out loud. Deterministic: every frame is tick(T) at a fixed clock,
 // so these numbers are reproducible to the pixel.
 
+import { srgbToHsv } from '../../src/index.js';
+
 const T = 10.0;
 
 export async function selftest(alley, canvas) {
@@ -17,14 +19,11 @@ export async function selftest(alley, canvas) {
     const i = 4 * (Math.round(fy * canvas.height) * canvas.width + Math.round(fx * canvas.width));
     return [d[i], d[i + 1], d[i + 2]];
   };
+  // Hue via the library, not hand math (house rule: no new conversion
+  // math in demos). Returns null for achromatic pixels.
   const hue = ([r, g, b]) => {
-    const M = Math.max(r, g, b), m = Math.min(r, g, b);
-    if (M === m) return null;
-    let h;
-    if (M === r) h = ((g - b) / (M - m)) % 6;
-    else if (M === g) h = (b - r) / (M - m) + 2;
-    else h = (r - g) / (M - m) + 4;
-    return ((h * 60) + 360) % 360;
+    const [h, s] = srgbToHsv([r / 255, g / 255, b / 255]);
+    return s < 1e-6 ? null : h;
   };
   const results = [];
   const check = (name, pass, detail) => results.push({ name, pass, detail });
@@ -77,6 +76,10 @@ export async function selftest(alley, canvas) {
   gl.finish();
   const ms = (performance.now() - t1) / 60;
   check('frame budget (< 8 ms)', ms < 8, `${ms.toFixed(2)} ms/frame`);
+
+  // Leave the scene exactly as the UI says it is.
+  alley.ctx.uMode.value = state.naive ? 1 : 0;
+  tick(T);
 
   console.table(results.map(({ name, pass, detail }) => ({ check: name, pass, detail })));
   const el = document.getElementById('derived');

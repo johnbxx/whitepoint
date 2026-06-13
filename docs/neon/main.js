@@ -88,15 +88,22 @@ let [pw, ph] = resize();
 let post = createPost(renderer, pw, ph, uMode);
 post.output.uniforms.uP3.value = isP3 ? 1 : 0;
 
+// Debounced: macOS fires resize continuously during a drag, and each
+// rebuild allocates four render targets.
+let resizeTimer = 0;
 window.addEventListener('resize', () => {
-  const [w, h] = resize();
-  if (w !== pw || h !== ph) {
-    [pw, ph] = [w, h];
-    post.dispose?.();
-    post = createPost(renderer, pw, ph, uMode);
-    post.output.uniforms.uP3.value = isP3 ? 1 : 0;
-    post.output.uniforms.uSrgbPreview.value = state.srgbPreview ? 1 : 0;
-  }
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const [w, h] = resize();
+    if (w !== pw || h !== ph) {
+      [pw, ph] = [w, h];
+      post.dispose?.();
+      post = createPost(renderer, pw, ph, uMode);
+      post.output.uniforms.uP3.value = isP3 ? 1 : 0;
+      post.output.uniforms.uSrgbPreview.value = state.srgbPreview ? 1 : 0;
+      renderStatic();
+    }
+  }, 150);
 });
 
 // ---- UI ----
@@ -325,8 +332,10 @@ if (reducedMotion) {
   requestAnimationFrame(frame);
 }
 
-// Exposed for the gas picker wiring and pixel verification.
-window.__alley = { ctx, swapGas: (i, gas) => { swapGas(derived, i, gas); refreshSurfaces(ctx); updateReadout(); }, state, GASES, tick, gl, post: () => post };
+// Exposed for the gas picker wiring and pixel verification. swapGas routes
+// through setGas so the API path updates everything the UI path does
+// (tubes, halos, surfaces, readout, spectrum).
+window.__alley = { ctx, swapGas: (i, gas) => setGas(derived.lights[i], gas), state, GASES, tick, gl, post: () => post };
 
 // ?selftest — run the page's own claim checks (see selftest.js).
 if (location.search.includes('selftest')) {
