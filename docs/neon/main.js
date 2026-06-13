@@ -3,7 +3,7 @@
 // clipping vs spectra → XYZ → emitted shaders → wide-gamut output.
 
 import * as THREE from 'three';
-import { deriveScene, swapGas, MATERIALS, GASES } from './spectra.js';
+import { deriveScene, swapGas, MATERIALS, GASES, lineColorCss, linePowers } from './spectra.js';
 import { buildAlley, refreshSurfaces, updateReflections, updateSignColors, MAX_LIGHTS } from './scene.js';
 import { createPost } from './post.js';
 
@@ -12,7 +12,7 @@ THREE.ColorManagement.enabled = false;
 // ---- The cast. pos = mount point; shading position is nudged off the wall.
 const LIGHT_DEFS = [
   // The hero: a gateway sign spanning the alley overhead, facing the camera.
-  { name: 'whitepoint', gas: 'neon', pos: [0.45, 4.15, -5.2], facing: 'front', nudge: [0, -0.6, 0.7], intensity: 1.6 },
+  { name: 'whitepoint', gas: 'neon', pos: [0.7, 4.15, -5.2], facing: 'front', nudge: [0, -0.6, 0.7], intensity: 1.6 },
   // Blade signs hanging perpendicular off the walls — they read head-on.
   { name: 'bar', gas: 'helium', pos: [-2.05, 3.05, -1.6], facing: 'front', nudge: [0, 0, 0.5], intensity: 1.0 },
   { name: 'open', gas: 'mercury', pos: [2.0, 2.75, -7.5], facing: 'front', nudge: [0, 0, 0.5], intensity: 0.9 },
@@ -100,13 +100,23 @@ window.addEventListener('resize', () => {
 });
 
 // ---- UI ----
-const state = { naive: false, sodiumOnly: false, srgbPreview: false };
+const state = { naive: false, sodiumOnly: false, srgbPreview: false, kT: 0.5 };
+
+// Reduced motion: render single deterministic frames on interaction
+// instead of running the drift/flicker loop.
+const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+const renderStatic = () => { if (reducedMotion) tick(10); };
+
+// The emitted output shader, shown verbatim.
+const shaderSrc = document.getElementById('shader-src');
+if (shaderSrc) shaderSrc.textContent = post.source;
 
 const toggle = document.getElementById('mode');
 toggle?.addEventListener('change', () => {
   state.naive = toggle.checked;
   uMode.value = state.naive ? 1 : 0;
   document.body.dataset.mode = state.naive ? 'naive' : 'whitepoint';
+  renderStatic();
 });
 
 const badge = document.getElementById('gamut-badge');
@@ -143,6 +153,7 @@ function chip(label, on, fn, extra = '') {
   const b = document.createElement('button');
   b.className = `chip ${on ? 'on' : ''} ${extra}`;
   b.textContent = label;
+  b.setAttribute('aria-pressed', String(on));
   b.addEventListener('click', fn);
   return b;
 }
@@ -154,15 +165,73 @@ function renderPicker() {
   gasEl.replaceChildren(...Object.keys(GASES).map((gas) =>
     chip(gas, selected.gas === gas, () => setGas(selected, gas))));
   if (infoEl) infoEl.textContent = GASES[selected.gas] ?? '';
+  drawSpectrum();
 }
 
 function setGas(light, gas) {
-  swapGas(derived, light.index, gas);
+  swapGas(derived, light.index, gas, state.kT);
   refreshSurfaces(ctx);
   updateSignColors(light);
   updateReadout();
   renderPicker();
+  renderStatic();
 }
+
+// ---- The spectrum you're looking at: the selected sign's emission lines,
+// each drawn in the color of its own wavelength (CMF sample, library-routed).
+const spdCanvas = document.getElementById('spd');
+const spdCaption = document.getElementById('spd-caption');
+function drawSpectrum() {
+  if (!spdCanvas || !selected) return;
+  const g2 = spdCanvas.getContext('2d');
+  const W = spdCanvas.width, H = spdCanvas.height;
+  g2.clearRect(0, 0, W, H);
+  const x0 = 380, x1 = 780;
+  const X = (nm) => ((nm - x0) / (x1 - x0)) * (W - 20) + 10;
+  // axis ticks
+  g2.fillStyle = 'rgba(154,160,174,0.6)';
+  g2.font = '10px ui-monospace, monospace';
+  for (let nm = 400; nm <= 750; nm += 50) {
+    g2.fillRect(X(nm), H - 14, 1, 4);
+    g2.fillText(`${nm}`, X(nm) - 9, H - 2);
+  }
+  for (const [wl, p] of linePowers(selected.gas, state.kT)) {
+    const h = Math.sqrt(p) * (H - 26);
+    g2.strokeStyle = lineColorCss(wl);
+    g2.globalAlpha = 0.35 + 0.65 * Math.sqrt(p);
+    g2.lineWidth = p > 0.5 ? 2 : 1;
+    g2.beginPath();
+    g2.moveTo(X(wl), H - 16);
+    g2.lineTo(X(wl), H - 16 - h);
+    g2.stroke();
+  }
+  g2.globalAlpha = 1;
+  if (spdCaption) {
+    const [Xc, Yc, Zc] = selected.xyz;
+    const cx = Xc / (Xc + Yc + Zc), cy = Yc / (Xc + Yc + Zc);
+    spdCaption.textContent = `${selected.name} — ${selected.gas} emission lines (NIST ASD), `
+      + `powers ∝ (g·A/λ)·exp(−E/kT) at kT = ${state.kT.toFixed(2)} eV → xy ${cx.toFixed(3)} ${cy.toFixed(3)}`;
+  }
+}
+
+// ---- kT: the discharge model's one knob, live.
+const ktEl = document.getElementById('kt');
+const ktReadout = document.getElementById('kt-readout');
+function setKT(v) {
+  state.kT = v;
+  if (ktReadout) ktReadout.textContent = `${v.toFixed(2)} eV`;
+  for (const l of swappable) {
+    swapGas(derived, l.index, l.gas, v);
+    updateSignColors(l);
+  }
+  refreshSurfaces(ctx);
+  updateReadout();
+  drawSpectrum();
+  renderStatic();
+}
+ktEl?.addEventListener('input', () => setKT(parseFloat(ktEl.value)));
+if (ktReadout) ktReadout.textContent = `${state.kT.toFixed(2)} eV`;
+
 renderPicker();
 
 const raycaster = new THREE.Raycaster();
@@ -186,6 +255,7 @@ killBtn?.addEventListener('click', () => {
   state.sodiumOnly = !state.sodiumOnly;
   killBtn.classList.toggle('on', state.sodiumOnly);
   killBtn.textContent = state.sodiumOnly ? 'relight the neon' : 'kill the neon';
+  renderStatic();
 });
 
 // ---- sRGB preview (only meaningful when the canvas really is P3).
@@ -196,6 +266,7 @@ if (srgbBtn && isP3) {
     state.srgbPreview = !state.srgbPreview;
     srgbBtn.classList.toggle('on', state.srgbPreview);
     post.output.uniforms.uSrgbPreview.value = state.srgbPreview ? 1 : 0;
+    renderStatic();
   });
 }
 
@@ -235,7 +306,11 @@ function frame() {
   tick((performance.now() - t0) / 1000);
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+if (reducedMotion) {
+  tick(10); // one still frame; interactions re-render via renderStatic
+} else {
+  requestAnimationFrame(frame);
+}
 
 // Exposed for the gas picker wiring and pixel verification.
 window.__alley = { ctx, swapGas: (i, gas) => { swapGas(derived, i, gas); refreshSurfaces(ctx); updateReadout(); }, state, GASES, tick, gl, post: () => post };

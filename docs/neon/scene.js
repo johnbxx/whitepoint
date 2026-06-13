@@ -118,7 +118,9 @@ const TUBE_FRAG = /* glsl */ `
   uniform float uMode;
   void main() {
     // Limb profile: a glowing column reads brightest through its core.
-    float core = 0.55 + 0.45 * pow(max(dot(normalize(vNormal), vView), 0.0), 2.0);
+    // (Squared by multiplication — pow(0, y) is NaN on some Metal drivers.)
+    float d = max(dot(normalize(vNormal), vView), 0.0);
+    float core = 0.55 + 0.45 * d * d;
     float p = uPower * uFlicker;
     vec3 whitepoint = uXyz * p * core;
     vec3 naive = uNaive * min(p * core, 1.0); // LDR: the tube saturates
@@ -148,6 +150,25 @@ const EMISSIVE_VERT = /* glsl */ `
   void main() {
     vUvE = uv;
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+  }
+`;
+
+// The damp-air beam under the streetlight: brightest at the lamp, soft at
+// the cone's silhouette edges, additive — light scattered into the camera.
+const FOG_FRAG = /* glsl */ `
+  varying vec2 vUvE;
+  uniform vec3 uXyz;
+  uniform vec3 uNaive;
+  uniform float uPower;
+  uniform float uFlicker;
+  uniform float uMode;
+  void main() {
+    // max() guard: pow(0, y) returns NaN on some Metal drivers, and one
+    // NaN in an additive pass paints the gamut-mapped output black.
+    float a = pow(max(vUvE.y, 1e-4), 1.6) * (0.45 + 0.55 * sin(3.14159265 * vUvE.x));
+    vec3 whitepoint = uXyz * uPower * uFlicker * a;
+    vec3 naive = min(uNaive * uPower * uFlicker, vec3(1.0)) * a;
+    gl_FragColor = vec4(mix(whitepoint, naive, uMode), 1.0);
   }
 `;
 
@@ -394,6 +415,28 @@ function buildStreetlight(ctx, light) {
   light.headMat = head.material;
   head.position.set(...light.pos);
   group.add(head);
+
+  // The beam: damp air under the lamp.
+  const fog = new THREE.Mesh(
+    new THREE.ConeGeometry(0.5, 3.4, 24, 1, true),
+    new THREE.ShaderMaterial({
+      vertexShader: EMISSIVE_VERT,
+      fragmentShader: FOG_FRAG,
+      uniforms: {
+        uXyz: { value: v3(light.xyz) },
+        uNaive: { value: v3(light.naive) },
+        uPower: { value: 0.03 },
+        uFlicker: light.flicker,
+        uMode: ctx.uMode,
+      },
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  fog.position.set(light.pos[0], light.pos[1] - 1.78, light.pos[2]);
+  group.add(fog);
   return group;
 }
 
@@ -520,7 +563,7 @@ export function buildAlley(ctx) {
       new THREE.CylinderGeometry(0.012, 0.012, 2.6, 6),
       surfaceMaterial(ctx, 'metal'),
     );
-    cable.position.set(0.45 + sx * 2.1, 5.45, -5.2);
+    cable.position.set(0.7 + sx * 2.0, 5.45, -5.2);
     cable.rotation.z = sx * 0.45;
     scene.add(cable);
   }
@@ -562,6 +605,21 @@ export function buildAlley(ctx) {
     const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, h, 8), surfaceMaterial(ctx, 'metal'));
     pipe.position.set(2.74, h / 2, z);
     scene.add(pipe);
+  }
+
+  // Overhead wires, sagging wall to wall — the alley's ceiling.
+  const wireMat = surfaceMaterial(ctx, 'metal');
+  for (const [z, h, sag] of [[-1.1, 6.0, 0.5], [-6.6, 5.7, 0.65], [-10.9, 6.2, 0.45]]) {
+    const pts = [
+      new THREE.Vector3(-2.8, h, z),
+      new THREE.Vector3(0, h - sag, z + 0.25),
+      new THREE.Vector3(2.8, h + 0.15, z),
+    ];
+    const wire = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.014, 5),
+      wireMat,
+    );
+    scene.add(wire);
   }
 
   // Wet reflections of everything that glows.

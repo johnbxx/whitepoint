@@ -174,6 +174,7 @@ export function createPost(renderer, width, height, uMode) {
   const ping = target(bw, bh);
   const pong = target(bw, bh);
 
+  const outputSource = outputFrag();
   const bright = pass(BRIGHT_FRAG, {
     tScene: { value: sceneRT.texture },
     uMode,
@@ -183,7 +184,7 @@ export function createPost(renderer, width, height, uMode) {
     tSrc: { value: null },
     uDir: { value: new THREE.Vector2() },
   });
-  const output = pass(outputFrag(), {
+  const output = pass(outputSource, {
     tScene: { value: sceneRT.texture },
     tBloom: { value: pong.texture },
     uMode,
@@ -227,5 +228,5 @@ export function createPost(renderer, width, height, uMode) {
     for (const p of [bright, blur, output]) p.mat.dispose();
   }
 
-  return { render, output: output.mat, sceneRT, dispose };
+  return { render, output: output.mat, sceneRT, dispose, source: outputSource };
 }

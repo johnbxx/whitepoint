@@ -36,9 +36,28 @@ function yNorm(spd) {
   return { start: spd.start, step: spd.step, values: spd.values.map((v) => v / Y) };
 }
 
-/** Y-normalized SPD of a gas discharge — intensity knobs mean luminance. */
-export function gasSPD(gas) {
-  return yNorm(gas === 'sodium-lamp' ? sodiumSPD() : dischargeSPD(EMISSION_LINES[gas]));
+/** Y-normalized SPD of a gas discharge — intensity knobs mean luminance.
+ * kT (eV) is the one model parameter: the excitation temperature of the
+ * Boltzmann emission model. The sodium streetlight is a lamp model (the
+ * D doublet), not a Boltzmann gas — it ignores kT. */
+export function gasSPD(gas, kT) {
+  return yNorm(gas === 'sodium-lamp' ? sodiumSPD() : dischargeSPD(EMISSION_LINES[gas], { kT }));
+}
+
+/** CSS color of a monochromatic line: the CMF sample at λ, library-routed. */
+export function lineColorCss(lambda) {
+  const i = Math.round(lambda) - CMF_1931_2_1NM.start;
+  const xyz = [CMF_1931_2_1NM.x[i], CMF_1931_2_1NM.y[i], CMF_1931_2_1NM.z[i]];
+  const s = clip(convert(xyz.map((v) => v / Math.max(...xyz, 1e-6)), 'xyz-d65', 'srgb'));
+  return `rgb(${s.map((v) => Math.round(v * 255)).join(',')})`;
+}
+
+/** Relative line powers of a gas under the discharge model, for plotting. */
+export function linePowers(gas, kT = 0.5) {
+  if (gas === 'sodium-lamp') return [[588.995, 1], [589.5924, 0.5]];
+  const lines = EMISSION_LINES[gas].map(([wl, gA, Ek]) => [wl, (gA / wl) * Math.exp(-Ek / kT)]);
+  const max = Math.max(...lines.map((l) => l[1]));
+  return lines.map(([wl, p]) => [wl, p / max]);
 }
 
 /** The "design tool" equivalent: true XYZ collapsed to clipped sRGB. */
@@ -117,11 +136,11 @@ export function deriveScene(lightDefs) {
   return { lights, pairs, windowPanes, sky, skyNaive: naiveSrgb(sky.map((v) => v * 12)) };
 }
 
-/** Recompute one light's spectral identity in place (the gas picker). */
-export function swapGas(derived, index, gas) {
+/** Recompute one light's spectral identity in place (gas picker / kT slider). */
+export function swapGas(derived, index, gas, kT) {
   const l = derived.lights[index];
   l.gas = gas;
-  l.spd = gasSPD(gas);
+  l.spd = gasSPD(gas, kT);
   l.xyz = emissionToXyz(l.spd, CMF);
   l.naive = naiveSrgb(l.xyz);
   for (const [name, coords] of Object.entries(MATERIALS)) {
