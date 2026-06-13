@@ -4,6 +4,35 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (none have needed to yet — the API audit before 0.7.0 found
 no renames worth their churn).
 
+## 0.10.0 — 2026-06-12
+
+The showpiece.
+
+- **`dischargeSPD()` + `EMISSION_LINES` in `whitepoint/spectral`**: gas
+  discharge spectra derived from atomic physics. `EMISSION_LINES` carries
+  NIST ASD transitions (observed air wavelength, g·A, upper-level energy)
+  for H, He, Ne, Na, Ar, Kr, Xe, Hg — fetched by a committed pipeline
+  (`tools/build-gas-lines.js`), never typed, and deliberately ignoring
+  ASD's qualitative intensity column. `dischargeSPD` models optically-thin
+  Boltzmann emission: line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT). Neon lands
+  red-orange at x ≈ 0.67 with 640.2 nm strongest — as real sign tubes do —
+  with every gas pinned to its known color region in `test/lines.test.js`,
+  robustly across the glow-discharge kT range. `lineSPD` remains the open
+  mechanism; `sodiumSPD` remains the canonical lamp model.
+- **The neon alley** (`docs/neon.html`): the 1.0 hero demo. A rain-wet
+  alley at night where every light is derived — neon/argon/mercury/helium
+  signs from `dischargeSPD`, the streetlight from `sodiumSPD`, stained
+  glass from 2700 K Planck × Beer–Lambert `attenuate`, surfaces from
+  `reflectanceOf` pair-integrated per light at load time. One toggle flips
+  the identical scene between the naive sRGB pipeline (hand-picked hex,
+  gamma-space mixing, channel clipping) and the whitepoint pipeline
+  (XYZ lighting, emitted OKLCH glow, exact-cusp gamut mapping, display-p3
+  output with live sRGB fallback). Gas picker per sign, kill-the-neon
+  sodium collapse, sRGB preview, and a deterministic `?selftest` mode that
+  pixel-checks the page's own claims. Three.js (pinned, bundled) drives
+  the geometry; its color management is bypassed entirely — every material
+  is a shader material and the output pass is library-emitted GLSL.
+
 ## 0.9.0 — 2026-06-12
 
 The front doors.

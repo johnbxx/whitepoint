@@ -3,6 +3,13 @@
 > **A research-grade color laboratory for the web.**
 > **Every color space, every illuminant — digit-identical in JS, GLSL, and WGSL.**
 
+[**→ the neon alley**](https://somejohnbforya.github.io/whitepoint/neon.html) —
+a rain-wet alley where every light is derived from NIST atomic spectra (there
+is no standard illuminant for neon, so the library computes one), rendered
+through emitted, parity-tested shaders to a display-p3 canvas. One toggle
+flips the whole scene to the naive sRGB pipeline every web demo uses. The
+argument for this library, in one switch.
+
 [![npm](https://img.shields.io/npm/v/whitepoint)](https://www.npmjs.com/package/whitepoint)
 [**→ the guide**](https://somejohnbforya.github.io/whitepoint/guide.html) —
 from your first CSS string to emitted shaders, with live examples.

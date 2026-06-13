@@ -35,6 +35,7 @@
   <div class="navlinks">
     <a href="./guide.html">guide</a>
     <a href="./index.html">demos</a>
+    <a href="./neon.html">neon alley</a>
     <a href="./convert.html">convert</a>
     <a href="./light.html">light lab</a>
     <a href="./accuracy.html">accuracy</a>
@@ -389,7 +390,8 @@ spectra.</p></article>
 <article id="sodiumSPD"><h4><code>sodiumSPD</code> <span class="src">spectral/index.js</span></h4><p>Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
 D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
 intensity ratio. The canonical near-monochromatic illuminant — under it,
-color appearance collapses to a single hue.</p></article>
+color appearance collapses to a single hue. (The lamp model, kept exact;
+for the full Na I line set see dischargeSPD(EMISSION_LINES.sodium).)</p></article>
 </section>
 
 <section>
@@ -486,7 +488,19 @@ includes both the disc and the in-scattered sky.</p><p><br><code class="prm">sta
 the total). Default gamma 0 looks at the disc's center: the color of
 direct sunlight through this atmosphere.</p></article>
 </section>
-
+<section><h3>Ungrouped</h3><article id="EMISSION_LINES"><h4><code>EMISSION_LINES</code> <span class="src">spectral/data-lines.js</span></h4><p>Emission-line transitions per element: arrays of [λ_air nm, g_k·A_ki s⁻¹, E_k eV].</p></article>
+<article id="dischargeSPD"><h4><code>dischargeSPD</code> <span class="src">spectral/index.js</span></h4><p>SPD of a low-pressure gas discharge, derived — not transcribed — from
+atomic data: optically-thin emission with Boltzmann-populated upper
+levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT). Pair with
+EMISSION_LINES (NIST ASD transitions): dischargeSPD(EMISSION_LINES.neon)
+is the spectrum of a neon sign. There is no standard illuminant for
+neon — this is how you compute one. kT is the excitation temperature in
+eV; the 0.5 eV default sits in the measured glow-discharge range, and
+since level energies dominate the line ratios, each gas lands in its
+known color region across that whole range (neon red-orange x ≈ 0.67,
+argon lavender, mercury blue-white — pinned in test/lines.test.js).
+Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
+ASD's qualitative observed-intensity column is deliberately unused.</p></article></section>
 
 <footer style="margin-top: 4rem; color: var(--dim); font-size: 0.85rem">
   <p>Regenerate with <code>node tools/build-api-page.js</code>.</p>

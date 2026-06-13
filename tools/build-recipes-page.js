@@ -90,6 +90,7 @@ const page = `<!doctype html>
   <div class="navlinks">
     <a href="./guide.html">guide</a>
     <a href="./index.html">demos</a>
+    <a href="./neon.html">neon alley</a>
     <a href="./convert.html">convert</a>
     <a href="./light.html">light lab</a>
     <a href="./accuracy.html">accuracy</a>
