@@ -63,6 +63,7 @@ function outputFrag() {
   out vec4 frag;
   uniform sampler2D tScene;
   uniform sampler2D tBloom;
+  uniform sampler2D tBloomWide;
   uniform float uMode;       // 0 whitepoint, 1 naive
   uniform float uP3;         // 1 when the drawing buffer is display-p3
   uniform float uSrgbPreview;// 1 to show the sRGB-clamped view on a P3 display
@@ -71,7 +72,9 @@ function outputFrag() {
 ${emitted}
   void main() {
     vec3 s = texture(tScene, vUv).rgb;
-    vec3 b = texture(tBloom, vUv).rgb;
+    // Two scales: a tight half-res core glow plus a quarter-res
+    // atmospheric spread — the way bright tubes actually photograph.
+    vec3 b = texture(tBloom, vUv).rgb + 0.55 * texture(tBloomWide, vUv).rgb;
     vec3 color;
     if (uMode < 0.5) {
       vec3 xyz = (s + uBloomAmt * b) * uExposure;
@@ -173,6 +176,10 @@ export function createPost(renderer, width, height, uMode) {
   const bh = Math.max(1, height >> 1);
   const ping = target(bw, bh);
   const pong = target(bw, bh);
+  const qw = Math.max(1, width >> 2);
+  const qh = Math.max(1, height >> 2);
+  const ping2 = target(qw, qh);
+  const pong2 = target(qw, qh);
 
   const outputSource = outputFrag();
   const bright = pass(BRIGHT_FRAG, {
@@ -187,6 +194,7 @@ export function createPost(renderer, width, height, uMode) {
   const output = pass(outputSource, {
     tScene: { value: sceneRT.texture },
     tBloom: { value: pong.texture },
+    tBloomWide: { value: pong2.texture },
     uMode,
     uP3: { value: 0 },
     uSrgbPreview: { value: 0 },
@@ -214,8 +222,22 @@ export function createPost(renderer, width, height, uMode) {
       renderer.setRenderTarget(ping);
       renderer.render(blur.scene, cam);
     }
-    // Final blurred result ends in `ping`; point the output pass at it.
+    // Final half-res result ends in `ping`; point the output pass at it.
     output.mat.uniforms.tBloom.value = ping.texture;
+
+    // Wide scale: downsample the tight bloom to quarter res and blur on.
+    for (let i = 0; i < 2; i++) {
+      blur.mat.uniforms.tSrc.value = i === 0 ? ping.texture : ping2.texture;
+      blur.mat.uniforms.uDir.value.set(1 / qw, 0);
+      renderer.setRenderTarget(pong2);
+      renderer.render(blur.scene, cam);
+
+      blur.mat.uniforms.tSrc.value = pong2.texture;
+      blur.mat.uniforms.uDir.value.set(0, 1 / qh);
+      renderer.setRenderTarget(ping2);
+      renderer.render(blur.scene, cam);
+    }
+    output.mat.uniforms.tBloomWide.value = ping2.texture;
 
     renderer.setRenderTarget(null);
     renderer.render(output.scene, cam);
@@ -225,6 +247,8 @@ export function createPost(renderer, width, height, uMode) {
     sceneRT.dispose();
     ping.dispose();
     pong.dispose();
+    ping2.dispose();
+    pong2.dispose();
     for (const p of [bright, blur, output]) p.mat.dispose();
   }
 

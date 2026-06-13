@@ -199,11 +199,27 @@ const xyz = reflectanceToXyz(refl, { illuminant: candle });
 cri(FL2_SPD);   // CIE 13.3: { Ra: 64, Ri[…], R9: −84 }
 tm30(FL2_SPD);  // IES TM-30-20: { Rf: 70, Rg: 86 }</pre>
   <div class="out" id="o-spectral"></div>
-  <p>The layer is deep — CMFs at 5 nm and 1 nm, Planck's law, CIE daylight synthesis,
-  CCT solving on the exact locus, color-blindness simulation, scotopic/mesopic vision,
-  Beer–Lambert attenuation with measured water data, Kubelka–Munk paint mixing, and the
-  Hosek–Wilkie sky with its solar disc. The <a href="./light.html">light lab</a> runs
-  all of it live; the <a href="./recipes.html">recipes</a> have the copy-paste versions.</p>
+  <p>Sometimes there is no illuminant to look up. Nobody ever standardized neon — so
+  the layer derives it: NIST atomic transitions under an optically-thin Boltzmann
+  model with one effective parameter, the excitation temperature. And when tabulated
+  data arrives on the wrong grid, <code class="inline">resample()</code> moves it the
+  way CIE 167:2005 says to — Sprague's quintic, exact at the nodes.</p>
+  <pre>import { dischargeSPD, EMISSION_LINES, resample, spectrumXy }
+  from 'whitepoint/spectral';
+import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
+
+const neon = dischargeSPD(EMISSION_LINES.neon);  // powers ∝ (g·A/λ)·e^(−E/kT)
+spectrumXy(neon, { cmf: CMF_1931_2_1NM });       // line spectra want 1 nm CMFs
+
+const fine = resample(FL2_SPD, { step: 1 });     // 5 nm table → 1 nm grid</pre>
+  <div class="out" id="o-discharge"></div>
+  <p>The <a href="./neon.html">neon alley</a> is exactly this code with a renderer
+  behind it. The layer is deep — CMFs at 5 nm and 1 nm, Planck's law, CIE daylight
+  synthesis, CCT solving on the exact locus, color-blindness simulation,
+  scotopic/mesopic vision, Beer–Lambert attenuation with measured water data,
+  Kubelka–Munk paint mixing, and the Hosek–Wilkie sky with its solar disc. The
+  <a href="./light.html">light lab</a> runs all of it live; the
+  <a href="./recipes.html">recipes</a> have the copy-paste versions.</p>
 </section>
 
 <section id="performance">
@@ -300,6 +316,20 @@ const f2cri = spectral.cri(spectral.FL2_SPD), f2tm = spectral.tm30(spectral.FL2_
 $('o-spectral').innerHTML = [
   `${sw(parseTo('#ff8800', 'srgb'))} #ff8800 under D65   →   ${sw(convert(candleXyz, 'xyz-d65', 'srgb'))} the same surface under candlelight`,
   `cri(FL2)  → Ra ${f2cri.Ra.toFixed(1)}, R9 ${f2cri.Ri[8].toFixed(0)}     tm30(FL2) → Rf ${f2tm.Rf.toFixed(1)}, Rg ${f2tm.Rg.toFixed(1)}`,
+].join('\n');
+
+// discharge + resample
+const cmf1 = wp.spectral1nm.CMF_1931_2_1NM;
+const dis = (gas) => {
+  const xy = spectral.spectrumXy(spectral.dischargeSPD(spectral.EMISSION_LINES[gas]), { cmf: cmf1 });
+  const lch = convert(wp.xyToXyz(xy).map((v) => v * 0.6), 'xyz-d65', 'oklch');
+  const safe = toGamut(lch, 'oklch', { gamut: 'srgb', method: 'cusp' });
+  return `${sw(convert(safe, 'oklch', 'srgb'))} ${gas.padEnd(8)} xy ${xy.map((v) => v.toFixed(3)).join(' ')}`;
+};
+const fineFl2 = spectral.resample(spectral.FL2_SPD, { step: 1 });
+$('o-discharge').innerHTML = [
+  dis('neon'), dis('argon'), dis('mercury'), dis('hydrogen'),
+  `resample(FL2_SPD, { step: 1 })  →  ${spectral.FL2_SPD.values.length} samples → ${fineFl2.values.length}, nodes exact`,
 ].join('\n');
 
 window.__guideReady = true;
