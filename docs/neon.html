@@ -9,7 +9,8 @@
 <meta property="og:description" content="There is no standard illuminant for neon, so the library computes one from NIST atomic data. One toggle: naive sRGB pipeline vs spectra → XYZ → emitted shaders → display-p3.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://somejohnbforya.github.io/whitepoint/neon.html">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://somejohnbforya.github.io/whitepoint/assets/neon-og.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root {
     --bg: #0c0d10; --panel: #14161b; --edge: #23262e;
@@ -24,7 +25,9 @@
   h1 .wp { background: linear-gradient(90deg, #ff3b1f, #4ba3f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .tagline { font-size: 1.15rem; color: var(--dim); margin-top: 0.75rem; max-width: 44rem; }
   section { margin-top: 3rem; }
+  h2 { font-size: 1.5rem; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
   .sub { color: var(--dim); margin-bottom: 1.25rem; max-width: 46rem; }
+  #honest .fine b { color: var(--text); }
   .sub code, .fine code { font-family: var(--mono); font-size: 0.85em; background: var(--panel); padding: 0.1em 0.4em; border-radius: 5px; }
   canvas { border-radius: 10px; display: block; width: 100%; background: #000; }
   .fine { color: var(--dim); font-size: 0.82rem; margin-top: 0.9rem; max-width: 46rem; }
@@ -146,6 +149,36 @@
   time, lights the scene in XYZ, and finishes through the library's emitted
   shaders — OKLCH glow, exact-cusp gamut mapping, wide-gamut display-p3 out.</p>
   <pre id="derived"></pre>
+</section>
+
+<section id="honest">
+  <h2>what's exact, what's approximate</h2>
+  <p class="sub">This is not real-time spectral path tracing, and the page should say
+  so. Here is exactly where the physics lives.</p>
+  <p class="fine"><b>Exact:</b> every (light, material) pair's diffuse response is
+  the full spectral integral — SPD × reflectance × color matching functions —
+  computed at load on the CPU (~60 integrals, microseconds). Spatial falloff is
+  wavelength-independent, so the GPU only ever scales and sums those precomputed
+  responses: for diffuse surfaces this is the physically correct answer, not an
+  approximation of it. All conversion math — XYZ → OKLCH, the cusp gamut maps, the
+  display transforms — is GLSL emitted by the library from the same constant table
+  the JS uses, parity-tested in CI.</p>
+  <p class="fine"><b>Derived, with a model:</b> gas line <i>positions</i> and
+  transition data (g·A, upper-level energies) are NIST ASD, fetched by a committed
+  pipeline — but sign plasmas are not in thermal equilibrium, so line <i>powers</i>
+  come from an optically-thin Boltzmann model with one effective parameter, the
+  excitation temperature kT (the slider above; NIST's qualitative intensity column
+  is deliberately unused — its values mix observation series with incompatible
+  scales). Every gas lands in its known color region across the plausible kT range.</p>
+  <p class="fine"><b>Plausible, honest-labeled:</b> brick, asphalt, and paint
+  reflectances — and the stained-glass dye transmittances — are Jakob–Hanika
+  spectra solved from target colors: smooth and physically shaped, not measured.
+  The sky is sodium streetlight scatter at rooftop level, not a sky model.</p>
+  <p class="fine"><b>Aesthetic:</b> bloom is a separable blur (linear-light XYZ in
+  the whitepoint path, clamped gamma in the naive path — that contrast is the
+  point), halos are additive quads, no interreflection, one bounce, no shadows.
+  The argument this page makes is about the <i>color pipeline</i>, and that part
+  routes entirely through shipped, verified library code.</p>
 </section>
 
 <footer>

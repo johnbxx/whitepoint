@@ -200,12 +200,13 @@ const xyz = reflectanceToXyz(reflectanceOf([0.8, 0.1, 0.1]), { illuminant: light
 const Lp = photopicLuminance(spd);      // cd/m2 for absolute input
 const Ls = scotopicLuminance(spd);      // rod-weighted (V', K'm = 1700.06)
 const { m } = mesopic(Lp, Ls);          // 1 = full color, 0 = rod gray</pre>
-<h2>Lamp spectra: sodium, fluorescent, lines</h2>
-<pre>import { sodiumSPD, lineSPD, FL2_SPD, FL11_SPD, spectrumXy } from 'whitepoint/spectral';
+<h2>Lamp spectra: sodium, neon, fluorescent</h2>
+<pre>import { sodiumSPD, dischargeSPD, EMISSION_LINES, resample, FL2_SPD, spectrumXy } from 'whitepoint/spectral';
 import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
-const lps = sodiumSPD();                      // Na D doublet (NIST), 2:1
-const neon = lineSPD([[640.2, 1], [585.2, 0.5]]);
-spectrumXy(lps, { cmf: CMF_1931_2_1NM });     // line spectra want 1 nm CMFs</pre>
+const lps = sodiumSPD();                        // Na D doublet (NIST), 2:1
+const neon = dischargeSPD(EMISSION_LINES.neon); // derived: (g·A/λ)·exp(−E/kT)
+spectrumXy(neon, { cmf: CMF_1931_2_1NM });      // → x ≈ 0.67, a real sign tube
+const fl2Fine = resample(FL2_SPD, { step: 1 }); // Sprague, per CIE 167:2005</pre>
 <h2>The sky, by wavelength (Hosek-Wilkie)</h2>
 <pre>import { skyModel, skySPD } from 'whitepoint/sky';
 import { spectrumXy, cctOf } from 'whitepoint/spectral';

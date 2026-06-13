@@ -233,14 +233,15 @@ const Ls = scotopicLuminance(spd);      // rod-weighted (V', K'm = 1700.06)
 const { m } = mesopic(Lp, Ls);          // 1 = full color, 0 = rod gray
 ```
 
-## Lamp spectra: sodium, fluorescent, lines
+## Lamp spectra: sodium, neon, fluorescent
 
 ```js
-import { sodiumSPD, lineSPD, FL2_SPD, FL11_SPD, spectrumXy } from 'whitepoint/spectral';
+import { sodiumSPD, dischargeSPD, EMISSION_LINES, resample, FL2_SPD, spectrumXy } from 'whitepoint/spectral';
 import { CMF_1931_2_1NM } from 'whitepoint/spectral-1nm';
-const lps = sodiumSPD();                      // Na D doublet (NIST), 2:1
-const neon = lineSPD([[640.2, 1], [585.2, 0.5]]);
-spectrumXy(lps, { cmf: CMF_1931_2_1NM });     // line spectra want 1 nm CMFs
+const lps = sodiumSPD();                        // Na D doublet (NIST), 2:1
+const neon = dischargeSPD(EMISSION_LINES.neon); // derived: (g·A/λ)·exp(−E/kT)
+spectrumXy(neon, { cmf: CMF_1931_2_1NM });      // → x ≈ 0.67, a real sign tube
+const fl2Fine = resample(FL2_SPD, { step: 1 }); // Sprague, per CIE 167:2005
 ```
 
 ## The sky, by wavelength (Hosek-Wilkie)
