@@ -253,6 +253,52 @@ export function attenuate(spd, absorption, distance) {
   return { start: spd.start, step: spd.step, values };
 }
 
+/**
+ * Resample a uniform-grid spectrum onto a new grid by Sprague (1880)
+ * quintic interpolation — the method CIE 167:2005 recommends for spectral
+ * data tabulated at equal intervals. Exact at source nodes; interior
+ * segments (two nodes in from each end) reproduce polynomials through
+ * degree 4 to rounding and hit the analytic Planckian to ~4e-9 relative;
+ * the two segments at each end use the CIE 167 boundary polynomials,
+ * which are approximations tuned for spectra (~4e-4 on the Planckian) —
+ * prefer sources that extend a little past the range you need. Never
+ * extrapolates: the target grid must lie within the source range.
+ * Verified against colour-science's SpragueInterpolator and Planck's law
+ * in test/resample.test.js.
+ */
+export function resample(spd, { start = spd.start, step = 1, end } = {}) {
+  const y = spd.values;
+  const n = y.length;
+  if (n < 6) throw new RangeError('resample: Sprague interpolation needs at least 6 samples');
+  const srcEnd = spd.start + (n - 1) * spd.step;
+  if (end === undefined) end = srcEnd;
+  if (start < spd.start || end > srcEnd + 1e-9) {
+    throw new RangeError(`resample: target [${start}, ${end}] outside source [${spd.start}, ${srcEnd}]`);
+  }
+  // Virtual points beyond each boundary (CIE 167:2005 end polynomials).
+  const before2 = (884 * y[0] - 1960 * y[1] + 3033 * y[2] - 2648 * y[3] + 1080 * y[4] - 180 * y[5]) / 209;
+  const before1 = (508 * y[0] - 540 * y[1] + 488 * y[2] - 367 * y[3] + 144 * y[4] - 24 * y[5]) / 209;
+  const after1 = (-24 * y[n - 6] + 144 * y[n - 5] - 367 * y[n - 4] + 488 * y[n - 3] - 540 * y[n - 2] + 508 * y[n - 1]) / 209;
+  const after2 = (-180 * y[n - 6] + 1080 * y[n - 5] - 2648 * y[n - 4] + 3033 * y[n - 3] - 1960 * y[n - 2] + 884 * y[n - 1]) / 209;
+  const p = (i) => (i < 0 ? (i === -1 ? before1 : before2) : i >= n ? (i === n ? after1 : after2) : y[i]);
+  const count = Math.round((end - start) / step) + 1;
+  const values = new Array(count);
+  for (let k = 0; k < count; k++) {
+    const t = (start + k * step - spd.start) / spd.step;
+    // Snap to a node when within fp noise of one — keeps node values exact.
+    const i = Math.floor(t + 1e-9);
+    const X = t - i < 1e-9 ? 0 : t - i;
+    const p0 = p(i - 2), p1 = p(i - 1), p2 = p(i), p3 = p(i + 1), p4 = p(i + 2), p5 = p(i + 3);
+    const a1 = (2 * p0 - 16 * p1 + 16 * p3 - 2 * p4) / 24;
+    const a2 = (-p0 + 16 * p1 - 30 * p2 + 16 * p3 - p4) / 24;
+    const a3 = (-9 * p0 + 39 * p1 - 70 * p2 + 66 * p3 - 33 * p4 + 7 * p5) / 24;
+    const a4 = (13 * p0 - 64 * p1 + 126 * p2 - 124 * p3 + 61 * p4 - 12 * p5) / 24;
+    const a5 = (-5 * p0 + 25 * p1 - 50 * p2 + 50 * p3 - 25 * p4 + 5 * p5) / 24;
+    values[k] = p2 + X * (a1 + X * (a2 + X * (a3 + X * (a4 + X * a5))));
+  }
+  return { start, step, values };
+}
+
 // ---- Emission-line spectra ----
 
 /**

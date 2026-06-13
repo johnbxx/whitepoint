@@ -500,7 +500,18 @@ since level energies dominate the line ratios, each gas lands in its
 known color region across that whole range (neon red-orange x ≈ 0.67,
 argon lavender, mercury blue-white — pinned in test/lines.test.js).
 Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
-ASD's qualitative observed-intensity column is deliberately unused.</p></article></section>
+ASD's qualitative observed-intensity column is deliberately unused.</p></article>
+<article id="resample"><h4><code>resample</code> <span class="src">spectral/index.js</span></h4><p>Resample a uniform-grid spectrum onto a new grid by Sprague (1880)
+quintic interpolation — the method CIE 167:2005 recommends for spectral
+data tabulated at equal intervals. Exact at source nodes; interior
+segments (two nodes in from each end) reproduce polynomials through
+degree 4 to rounding and hit the analytic Planckian to ~4e-9 relative;
+the two segments at each end use the CIE 167 boundary polynomials,
+which are approximations tuned for spectra (~4e-4 on the Planckian) —
+prefer sources that extend a little past the range you need. Never
+extrapolates: the target grid must lie within the source range.
+Verified against colour-science's SpragueInterpolator and Planck's law
+in test/resample.test.js.</p></article></section>
 
 <footer style="margin-top: 4rem; color: var(--dim); font-size: 0.85rem">
   <p>Regenerate with <code>node tools/build-api-page.js</code>.</p>

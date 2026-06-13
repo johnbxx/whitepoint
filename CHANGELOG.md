@@ -4,6 +4,23 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (none have needed to yet — the API audit before 0.7.0 found
 no renames worth their churn).
 
+## 0.11.0 — 2026-06-12
+
+The last provenance item before 1.0.
+
+- **`resample()` in `whitepoint/spectral`**: Sprague (1880) quintic
+  interpolation as CIE 167:2005 recommends for equal-interval spectral
+  data. Exact at source nodes; interior segments reproduce quartics to
+  rounding and track the analytic Planckian to ~4×10⁻⁹ relative; the CIE
+  boundary polynomials at each end are honest-labeled approximations
+  (~4×10⁻⁴ on the Planckian — prefer sources that extend past the range
+  you need). Verified three ways in `test/resample.test.js`: algebraic
+  invariants, the colour-science `SpragueInterpolator` oracle (fixture
+  via committed `tools/build-sprague-oracle.py`), and Planck's law as
+  analytic ground truth. Notable: the method does *not* reproduce
+  quintics (the derivative stencils are 4th-order) — the docs say so
+  instead of rounding up.
+
 ## 0.10.0 — 2026-06-12
 
 The showpiece.

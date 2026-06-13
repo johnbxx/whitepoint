@@ -56,6 +56,9 @@ export function mesopic(photopic: number, scotopic: number): { m: number; lumina
 /** Beer–Lambert: S(λ)·exp(−a(λ)·d). Pair with WATER_ABSORPTION and meters. */
 export function attenuate(spd: Spectrum, absorption: Spectrum, distance: number): Spectrum;
 
+/** Sprague (1880) quintic resampling per CIE 167:2005. No extrapolation; target must lie within the source range. */
+export function resample(spd: Spectrum, opts?: { start?: number; step?: number; end?: number }): Spectrum;
+
 /** Emission lines [λ nm, power] as integral-preserving Gaussian profiles. */
 export function lineSPD(lines: ArrayLike<number>[], opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 /** Low-pressure sodium: the Na D doublet (NIST ASD), 2:1 intensity. */
