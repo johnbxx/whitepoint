@@ -60,6 +60,13 @@ export function attenuate(spd: Spectrum, absorption: Spectrum, distance: number)
 export function lineSPD(lines: ArrayLike<number>[], opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 /** Low-pressure sodium: the Na D doublet (NIST ASD), 2:1 intensity. */
 export function sodiumSPD(opts?: { start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
+/** Neutral-atom transitions per element (NIST ASD): [λ_air nm, g_k·A_ki s⁻¹, E_k eV]. */
+export const EMISSION_LINES: {
+  hydrogen: number[][]; helium: number[][]; neon: number[][]; sodium: number[][];
+  argon: number[][]; krypton: number[][]; xenon: number[][]; mercury: number[][];
+};
+/** Low-pressure discharge SPD, derived: line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT), kT in eV. */
+export function dischargeSPD(transitions: ArrayLike<number>[], opts?: { kT?: number; start?: number; step?: number; end?: number; fwhm?: number }): Spectrum;
 
 /** CIE 13.3-1995 color rendering index: Ra (mean R1–R8) + all 14 Ri (R9 = strong red). */
 export function cri(spd: Spectrum): { Ra: number; Ri: number[]; cct: number; duv: number };

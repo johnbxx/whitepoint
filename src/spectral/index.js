@@ -21,6 +21,7 @@ export { FL2_SPD, FL7_SPD, FL11_SPD } from './data-fluorescent.js';
 export { simulateCVD } from './cvd.js';
 export { reflectanceOf, kmMixReflectance, pigmentMix } from './pigment.js';
 export { WATER_ABSORPTION } from './data-water.js';
+export { EMISSION_LINES } from './data-lines.js';
 export { V_PRIME_1951 };
 export { cri, tm30, cam02ViewingConditions, xyzToCam02Ucs } from './quality.js';
 
@@ -278,10 +279,30 @@ export function lineSPD(lines, { start = 360, step = 1, end = 830, fwhm = 2 } = 
 }
 
 /**
+ * SPD of a low-pressure gas discharge, derived — not transcribed — from
+ * atomic data: optically-thin emission with Boltzmann-populated upper
+ * levels, line power ∝ (g_k·A_ki/λ)·exp(−E_k/kT). Pair with
+ * EMISSION_LINES (NIST ASD transitions): dischargeSPD(EMISSION_LINES.neon)
+ * is the spectrum of a neon sign. There is no standard illuminant for
+ * neon — this is how you compute one. kT is the excitation temperature in
+ * eV; the 0.5 eV default sits in the measured glow-discharge range, and
+ * since level energies dominate the line ratios, each gas lands in its
+ * known color region across that whole range (neon red-orange x ≈ 0.67,
+ * argon lavender, mercury blue-white — pinned in test/lines.test.js).
+ * Honesty: sign plasmas are not in LTE; kT is an effective parameter, and
+ * ASD's qualitative observed-intensity column is deliberately unused.
+ */
+export function dischargeSPD(transitions, { kT = 0.5, ...opts } = {}) {
+  const lines = transitions.map(([wl, gA, Ek]) => [wl, (gA / wl) * Math.exp(-Ek / kT)]);
+  return lineSPD(lines, opts);
+}
+
+/**
  * Low-pressure sodium lamp: the Na D doublet, D2 588.9950 nm and
  * D1 589.5924 nm (NIST ASD, air wavelengths) at the 2:1 statistical-weight
  * intensity ratio. The canonical near-monochromatic illuminant — under it,
- * color appearance collapses to a single hue.
+ * color appearance collapses to a single hue. (The lamp model, kept exact;
+ * for the full Na I line set see dischargeSPD(EMISSION_LINES.sodium).)
  */
 export function sodiumSPD(opts) {
   return lineSPD([[588.9950, 2], [589.5924, 1]], opts);
