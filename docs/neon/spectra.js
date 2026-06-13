@@ -1,7 +1,7 @@
 // Load-time derivation: every light in the alley starts as a spectrum,
 // never a hex code. The naive pipeline's colors are derived here too, by
 // doing exactly what a design workflow does — collapse the true color to
-// clipped sRGB once, then treat those 8-bit-ish values as the light.
+// clipped sRGB once, then treat those values as the light.
 //
 // The trick that makes the render exact for diffuse surfaces: for each
 // (light, material) pair we integrate SPD × reflectance × CMF → XYZ here,
@@ -12,25 +12,33 @@
 import {
   dischargeSPD, sodiumSPD, EMISSION_LINES,
   emissionToXyz, reflectanceOf, reflectanceToXyz,
+  planckianSPD, attenuate,
 } from '../../src/spectral/index.js';
 import { CMF_1931_2_1NM } from '../../src/spectral/data-1nm.js';
 import { convert, parseTo, clip } from '../../src/index.js';
 
 const CMF = { cmf: CMF_1931_2_1NM };
+const GRID = { start: 360, step: 1, end: 830 };
 
-/** Gas catalog for the picker: label + the physics behind the color. */
-export const GASES = ['neon', 'argon', 'mercury', 'helium', 'krypton', 'xenon', 'hydrogen'];
+/** Gas catalog for the picker, with the physics behind each color. */
+export const GASES = {
+  neon: 'Ne I — the classic red-orange; 640.2 nm strongest',
+  argon: 'Ar I — pale lavender',
+  mercury: 'Hg I — blue-white; 435.8 / 546.1 nm',
+  helium: 'He I — peach; D3 587.6 nm',
+  krypton: 'Kr I — pale white-lavender',
+  xenon: 'Xe I — blue-violet',
+  hydrogen: 'H I — Balmer pink; Hα 656.3 nm',
+};
 
-/** Y-normalized SPD of a gas discharge — intensity knobs mean luminance. */
-export function gasSPD(gas) {
-  const spd = gas === 'sodium-lamp' ? sodiumSPD() : dischargeSPD(EMISSION_LINES[gas]);
+function yNorm(spd) {
   const Y = emissionToXyz(spd, CMF)[1];
   return { start: spd.start, step: spd.step, values: spd.values.map((v) => v / Y) };
 }
 
-/** XYZ (Y = 1) of a light SPD. */
-export function lightXyz(spd) {
-  return emissionToXyz(spd, CMF);
+/** Y-normalized SPD of a gas discharge — intensity knobs mean luminance. */
+export function gasSPD(gas) {
+  return yNorm(gas === 'sodium-lamp' ? sodiumSPD() : dischargeSPD(EMISSION_LINES[gas]));
 }
 
 /** The "design tool" equivalent: true XYZ collapsed to clipped sRGB. */
@@ -39,37 +47,85 @@ export function naiveSrgb(xyz) {
 }
 
 /**
+ * Stained glass: a 2700 K incandescent bulb (Planck's law — shipped)
+ * filtered through plausible colorant transmittances (Jakob–Hanika via
+ * reflectanceOf, honest-labeled: smooth and physical, not measured dyes),
+ * applied with Beer–Lambert attenuate(). Returns per-pane XYZ for the
+ * window geometry plus the aggregate SPD that lights the alley.
+ */
+export function windowLight(paneHexes) {
+  const bulb = yNorm(planckianSPD(2700, GRID));
+  const panes = paneHexes.map((hex) => {
+    const T = reflectanceOf(parseTo(hex, 'srgb'), 'srgb');
+    const absorption = {
+      start: T.start, step: T.step,
+      values: T.values.map((v) => -Math.log(Math.max(v, 1e-3))),
+    };
+    const spd = attenuate(bulb, absorption, 1);
+    const xyz = emissionToXyz(spd, CMF);
+    return { spd, xyz, naive: naiveSrgb(xyz) };
+  });
+  const sum = { ...GRID, values: new Array(bulb.values.length).fill(0) };
+  for (const p of panes) p.spd.values.forEach((v, i) => { sum.values[i] += v; });
+  return { panes, spd: yNorm(sum) };
+}
+
+/**
  * Materials: plausible reflectance spectra solved from base colors
- * (Jakob–Hanika via reflectanceOf — smooth, physical, honest-labeled as
- * plausible rather than measured).
+ * (Jakob–Hanika — smooth, physical, honest-labeled as plausible rather
+ * than measured).
  */
 export const MATERIALS = {
   brick: parseTo('#7c4935', 'srgb'),
   mortar: parseTo('#8d857a', 'srgb'),
-  asphalt: parseTo('#34363c', 'srgb'),
-  asphaltWet: parseTo('#22242a', 'srgb'),
+  asphalt: parseTo('#3a3c42', 'srgb'),
+  asphaltWet: parseTo('#1c1e24', 'srgb'),
   door: parseTo('#2e5950', 'srgb'),
   concrete: parseTo('#6f6a62', 'srgb'),
+  panel: parseTo('#16181d', 'srgb'),
+  metal: parseTo('#2c3138', 'srgb'),
 };
-
-export function materialReflectance(name) {
-  return reflectanceOf(MATERIALS[name], 'srgb');
-}
 
 /**
  * The full precomputation: lights × materials.
- * Returns per-light { spd, xyz, naive } and per-material per-light pair XYZ.
+ * Light defs: { name, gas } | { name, window: [paneHexes] }, plus
+ * pos/intensity passed through. Returns lights with { spd, xyz, naive },
+ * the per-material pair table, and window pane colors for the geometry.
  */
 export function deriveScene(lightDefs) {
+  let windowPanes = null;
   const lights = lightDefs.map((def) => {
-    const spd = gasSPD(def.gas);
-    const xyz = lightXyz(spd);
+    let spd;
+    if (def.window) {
+      const w = windowLight(def.window);
+      windowPanes = w.panes;
+      spd = w.spd;
+    } else {
+      spd = gasSPD(def.gas);
+    }
+    const xyz = emissionToXyz(spd, CMF);
     return { ...def, spd, xyz, naive: naiveSrgb(xyz) };
   });
   const pairs = {};
-  for (const name of Object.keys(MATERIALS)) {
-    const refl = materialReflectance(name);
+  for (const [name, coords] of Object.entries(MATERIALS)) {
+    const refl = reflectanceOf(coords, 'srgb');
     pairs[name] = lights.map((l) => reflectanceToXyz(refl, { illuminant: l.spd, ...CMF }));
   }
-  return { lights, pairs };
+  // Night sky over a city is mostly scattered streetlight: reuse the sodium
+  // chromaticity at rooftop-glow level rather than inventing a sky color.
+  const sky = emissionToXyz(gasSPD('sodium-lamp'), CMF).map((v) => v * 0.035);
+  return { lights, pairs, windowPanes, sky, skyNaive: naiveSrgb(sky.map((v) => v * 12)) };
+}
+
+/** Recompute one light's spectral identity in place (the gas picker). */
+export function swapGas(derived, index, gas) {
+  const l = derived.lights[index];
+  l.gas = gas;
+  l.spd = gasSPD(gas);
+  l.xyz = emissionToXyz(l.spd, CMF);
+  l.naive = naiveSrgb(l.xyz);
+  for (const [name, coords] of Object.entries(MATERIALS)) {
+    derived.pairs[name][index] = reflectanceToXyz(reflectanceOf(coords, 'srgb'), { illuminant: l.spd, ...CMF });
+  }
+  return l;
 }

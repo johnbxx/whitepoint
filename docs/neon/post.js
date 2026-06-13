@@ -177,7 +177,7 @@ export function createPost(renderer, width, height, uMode) {
   const bright = pass(BRIGHT_FRAG, {
     tScene: { value: sceneRT.texture },
     uMode,
-    uThreshold: { value: 1.5 },
+    uThreshold: { value: 1.2 },
   });
   const blur = pass(BLUR_FRAG, {
     tSrc: { value: null },
@@ -190,7 +190,7 @@ export function createPost(renderer, width, height, uMode) {
     uP3: { value: 0 },
     uSrgbPreview: { value: 0 },
     uExposure: { value: 1.0 },
-    uBloomAmt: { value: 1.0 },
+    uBloomAmt: { value: 0.7 },
   });
 
   const cam = new THREE.OrthographicCamera(); // unused by the shaders
@@ -220,5 +220,12 @@ export function createPost(renderer, width, height, uMode) {
     renderer.render(output.scene, cam);
   }
 
-  return { render, output: output.mat, sceneRT };
+  function dispose() {
+    sceneRT.dispose();
+    ping.dispose();
+    pong.dispose();
+    for (const p of [bright, blur, output]) p.mat.dispose();
+  }
+
+  return { render, output: output.mat, sceneRT, dispose };
 }
