@@ -17,7 +17,7 @@
 
 import { convert, resolve } from '../core/convert.js';
 import { polarToRect, DEG2RAD } from '../core/polar.js';
-import { OKLAB_M2_INV, LMS_TO_XYZ } from '../spaces/oklab.js';
+import { OKLAB_M2_INV, LMS_TO_XYZ, OKLCH } from '../spaces/oklab.js';
 import { mul } from '../core/mat3.js';
 
 const JND = 0.02;   // CSS Color 4 §13.1.1 "just noticeable difference" in OKLab
@@ -377,15 +377,18 @@ export function toGamut(coords, space, opts = {}, out = [0, 0, 0]) {
     clip(_mapped, _mapped);
     return convert(_mapped, G, S, out);
   }
-
-  convert(coords, S, 'oklch', _in);
+  if (method === 'cusp') {
+    // Cusp mapping is defined in OKLCH; when the caller is already there,
+    // the two identity round-trips are pure overhead — map in place.
+    if (S === OKLCH) return cuspMap(coords, G, out);
+    convert(coords, S, OKLCH, _in);
+    cuspMap(_in, G, _mapped);
+    return convert(_mapped, OKLCH, S, out);
+  }
   if (method === 'css') {
+    convert(coords, S, OKLCH, _in);
     cssMap(_in, G, _mapped);
     return convert(_mapped, G, S, out); // css method produces gamut-space coords
-  }
-  if (method === 'cusp') {
-    cuspMap(_in, G, _mapped);
-    return convert(_mapped, 'oklch', S, out); // cusp method stays in OKLCH
   }
   throw new Error(`whitepoint: unknown gamut mapping method "${method}" (have: css, cusp, clip)`);
 }

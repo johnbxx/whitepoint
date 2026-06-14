@@ -79,11 +79,19 @@ export const spaces = {
   'ycbcr-709-limited': YCbCr709Limited,
 };
 
+// Two-slot move-to-front memo: real workloads (and convert's from/to pair)
+// resolve the same handful of id strings over and over, so a string compare
+// front-runs the registry hash lookup. Objects skip this entirely.
+let _r0k = null, _r0v = null, _r1k = null, _r1v = null;
+
 /** Resolve a space id string to its registry object. Throws on unknown ids. */
 export function resolve(space) {
   if (typeof space === 'string') {
+    if (space === _r0k) return _r0v;
+    if (space === _r1k) return _r1v;
     const s = spaces[space];
     if (!s) throw new Error(`whitepoint: unknown color space "${space}" (have: ${Object.keys(spaces).join(', ')})`);
+    _r1k = _r0k; _r1v = _r0v; _r0k = space; _r0v = s; // shift into the front slot
     return s;
   }
   return space;

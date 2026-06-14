@@ -4,6 +4,19 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
 in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
 
+## 0.14.4 — 2026-06-13
+
+Performance — two hot-path wins, both behavior-identical (193 tests and the
+differential oracle suite unchanged; zero new allocation):
+
+- **String-id conversions** resolve through a two-slot move-to-front memo in
+  `resolve()`, so passing `'oklch'`/`'srgb'` is nearly as fast as pre-resolved
+  space objects — the string path went from slowest-or-tied to faster than
+  culori and @texel/color on every measured pair (e.g. srgb→oklch 90→69 ns).
+- **Cusp gamut mapping** skips the two identity round-trips when the input is
+  already OKLCH (the common case), 125→89 ns/op — faster than @texel's fitted
+  cusp (~117 ns) while staying the *exact*, derived cusp, not a polynomial fit.
+
 ## 0.14.3 — 2026-06-13
 
 Docs only. Rewrote NORTHSTAR.md for an outside reader: dropped the internal
