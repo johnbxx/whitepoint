@@ -32,7 +32,10 @@ it to the last digit. Stop hand-porting color matrices.
 - **Re-light a color** — chromatic adaptation between arbitrary white points
   with five CATs, the full CIE illuminant table, and CCT-derived daylight
 - **Compute color from spectra** — measured reflectance under any light, the
-  true Planckian locus from Planck's law, both standard observers
+  true Planckian locus from Planck's law, the full standard-illuminant catalog
+  (fluorescent, sodium, metal-halide, LED), and neon/argon/sodium *derived*
+  from NIST atomic lines — `emissionColor('neon')` for a color that can't be
+  picked because there's no standard to pick from
 - **Run a full appearance model** — CAM16 with configurable viewing
   conditions, CAM16-UCS, and Material's HCT
 - **Stand on exact gamut geometry** — the cusp and boundary are solved
@@ -141,11 +144,28 @@ oldest loop: integrating Planck's law at 2856 K against the CMFs reproduces
 CIE illuminant A's tabulated chromaticity to 3e-4, and the D65 SPD integrates
 back to its own table entry. Metamerism, reflectance-under-any-light, and
 the unfitted Planckian locus — the workflows that previously required
-Python — run in the browser. The F-series fluorescent SPDs ship too (their
-integration reproduces the F2/F7/F11 table chromaticities — another loop
-closed), and the CIE-normative **1 nm CMFs** are an opt-in import
-(`whitepoint/spectral-1nm`) for spiky line spectra, tightening the
-Planck→illuminant-A anchor to 1.5e-4.
+Python — run in the browser. Every standardized illuminant ships as an SPD —
+the full F-series (FL1–12), the high-pressure discharge lamps (HP1–5: sodium
+and metal-halide), and the CIE 15:2018 LED series — each integrating back to
+its published chromaticity (another loop closed). The CIE-normative **1 nm
+CMFs** are an opt-in import (`whitepoint/spectral-1nm`) for spiky line spectra,
+tightening the Planck→illuminant-A anchor to 1.5e-4.
+
+And when no standard illuminant exists — a neon sign, an argon tube — the
+library *derives* one from atomic physics. This is the one-liner the alley
+above is built on:
+
+```js
+import { emissionColor, emissionSPD } from 'whitepoint/spectral';
+
+emissionColor('neon', { to: 'oklch', gamut: 'srgb' });  // the sign's color — derived, not picked
+emissionColor('neon', { gamut: 'display-p3' });          // a redder neon a wide screen shows
+emissionSPD('argon');                                    // the spectrum itself, or pass your own lines
+```
+
+Line powers come from NIST transition probabilities under a Boltzmann model
+(power ∝ g·A/λ·exp(−E/kT)) — the line positions exact, the model honest about
+being a model.
 
 The physics keeps going where color meets the world:
 

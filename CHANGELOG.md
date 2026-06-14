@@ -4,6 +4,13 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
 in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
 
+## 0.14.1 — 2026-06-13
+
+Docs only. The README now showcases the emission API (`emissionColor` /
+`emissionSPD`) and the completed illuminant catalog (full F-series, HP, LED) —
+closing the loop with the neon-alley hero at the top of the page. No code
+changes; published so the npm landing page reflects the 0.12–0.14 work.
+
 ## 0.14.0 — 2026-06-13
 
 The standard-illuminant catalog, finished.
