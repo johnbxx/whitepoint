@@ -4,6 +4,14 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
 in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
 
+## 0.14.3 — 2026-06-13
+
+Docs only. Rewrote NORTHSTAR.md for an outside reader: dropped the internal
+"Target / 110%" pillar framing, the "purity is an instrument" in-joke, and the
+struck-through "no parsing, ever" amendment (that history lives here in the
+changelog, not the manifesto). The design principles and scope rule are
+unchanged in substance — only the insider shorthand is gone. No code changes.
+
 ## 0.14.2 — 2026-06-13
 
 Docs correctness. Audited the "Honest comparison" table against the *current*
