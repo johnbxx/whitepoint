@@ -415,11 +415,12 @@ only; constants still in motion wait.**
 
 In by the rule: conversions, adaptation, gamut mapping, interpolation
 (including premultiplied alpha — the one place alpha has defined coordinate
-semantics), serialization, WCAG 2 contrast, deltaE. Out by the rule: CSS
-string *parsing* (a grammar problem with churning specs and `none` semantics
-that would poison the 3-channel zero-allocation core — parse with culori and
-pass the arrays here), and APCA/WCAG 3 contrast (returns when its constants
-freeze). Out by judgment: color wrapper classes, palettes, gradient objects
+semantics), serialization, WCAG 2 contrast, deltaE, and — since v0.8 —
+parsing the *frozen* CSS Color 4 grammar (a fenced module that tree-shakes
+away; the conversion core still never sees a string, and `none` becomes NaN
+under the numerical policy). Out by the rule: CSS Level 5 relative-color
+syntax and calc() (a churning spec — they wait, like every unfrozen
+constant), and APCA/WCAG 3 contrast (returns when its constants freeze). Out by judgment: color wrapper classes, palettes, gradient objects
 — those belong to applications. Alpha is not a color coordinate: the
 conversion core is and stays 3-channel; alpha-aware operations are separate,
 consistently 4-channel entry points.

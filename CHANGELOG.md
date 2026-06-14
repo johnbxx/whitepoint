@@ -4,6 +4,18 @@ All notable changes. The project follows semver; until 1.0, minor versions
 may adjust APIs (taken so far, both pre-npm: `dischargeSPD` → `emissionSPD`
 in 0.12.0, `sodiumSPD` → `lowPressureSodiumSPD` in 0.13.0 — see below).
 
+## 0.14.2 — 2026-06-13
+
+Docs correctness. Audited the "Honest comparison" table against the *current*
+competitor releases (culori 4.0.2, colorjs.io 0.6.1, @texel/color 1.1.11) by
+inspecting their shipped source, and fixed two stale cells: whitepoint's own
+CSS-parsing row (it has parsed CSS Color 4 since 0.8 but still read "no, by
+design"), and **colorjs.io's CAM16/HCT** (it ships both as color spaces —
+was marked "no"; the kind of error a competitor's maintainer would catch).
+@texel/color's parsing softened to "partial (hex)" since it does `hexToRGB`.
+The README "scope rule" section's parsing anti-goal amended to match NORTHSTAR
+(which already recorded the v0.8 reversal). No code changes.
+
 ## 0.14.1 — 2026-06-13
 
 Docs only. The README now showcases the emission API (`emissionColor` /

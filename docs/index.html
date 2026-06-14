@@ -187,12 +187,14 @@
       <tr><td>Shader codegen (GLSL/WGSL)</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
       <tr><td>Arbitrary illuminants + CATs + CCT</td><td class="y">yes</td><td class="n">no</td><td class="n">partial</td><td class="n">no</td></tr>
       <tr><td>Spectral (CMFs, Planck, daylight)</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
-      <tr><td>CAM16 / HCT</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>CAM16 / HCT</td><td class="y">yes</td><td class="n">no</td><td class="y">yes</td><td class="n">no</td></tr>
       <tr><td>Published precision bounds</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">partial</td></tr>
-      <tr><td>CSS string parsing</td><td class="n">no, by design</td><td class="y">yes</td><td class="y">yes</td><td class="n">no</td></tr>
+      <tr><td>CSS string parsing</td><td class="y">yes (CSS Color 4)</td><td class="y">yes</td><td class="y">yes</td><td class="n">partial (hex)</td></tr>
     </table>
-    <p class="sub" style="margin-top:0.75rem">Parsing is deliberately out of scope — parse with
-    culori, pass the arrays here. Speed and accuracy claims are reproducible:
+    <p class="sub" style="margin-top:0.75rem">Parsing covers the frozen CSS Color 4 grammar
+    (hex, the 148 named colors, every Level 4 functional form) in a fenced module that
+    tree-shakes away if unused; Level 5 relative-color and calc() wait for the spec to freeze.
+    Speed and accuracy claims are reproducible:
     <code class="inline">npm run bench</code>, <code class="inline">npm run precision</code>.</p>
   </section>
 
